@@ -3,7 +3,7 @@ from pathlib import Path
 from cryptography.fernet import Fernet
 
 BASE = Path(__file__).resolve().parent.parent
-KEY_FILE = BASE / "secret.key"
+KEY_FILE = BASE / "db" / "secret.key"
 
 def get_encryption_key():
     if KEY_FILE.exists():

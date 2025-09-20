@@ -20,8 +20,9 @@ from Logic.storage import _load_all_passwords
 from Main.PerfilWindow import Perfil_Window
 
 
-class View_Password(QWidget):
 
+class View_Password(QWidget):
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setObjectName("ViewPassword")
@@ -32,7 +33,7 @@ class View_Password(QWidget):
         self.titulo_saved = QLabel("Saved passwords", self)
         self.titulo_saved.setGeometry(105, 30, 400, 40)
         self.titulo_saved.setStyleSheet("""
-            font-family: Helvetica;
+            font-family: Helvetica; 
             font-size: 24px;
             color: black; border: none;
         """)
@@ -92,21 +93,6 @@ class View_Password(QWidget):
         self._load_from_store()
         self._rebuild_list()
 
-    # ---------- API pública ----------
-    def refresh(self):
-        """Recarga desde la base de datos y reconstruye la lista al instante."""
-        self._load_from_store()
-        current_query = self.input_pass.text() if hasattr(self, "input_pass") else None
-        self._rebuild_list(current_query)
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        # Al mostrar la vista, garantizamos que se ve lo último
-        try:
-            self.refresh()
-        except Exception:
-            pass
-
     # ================== Carga de datos ==================
     def _load_from_store(self):
         """
@@ -125,20 +111,17 @@ class View_Password(QWidget):
     def _apply_filter(self, text: str):
         self._rebuild_list(text)
 
-    def _clear_layout(self):
-        """Elimina TODOS los widgets/espaciadores del layout para evitar acumulación de stretches."""
+    def _clear_vbox(self):
+    # Saca TODO del layout: widgets y spacers
         while self.vbox.count():
             item = self.vbox.takeAt(0)
             w = item.widget()
             if w is not None:
+                w.setParent(None)
                 w.deleteLater()
 
     def _rebuild_list(self, text: str | None = None):
-        # Evitar parpadeo al reconstruir
-        self.setUpdatesEnabled(False)
-
-        # limpiar cards previas + stretches anteriores
-        self._clear_layout()
+        self._clear_vbox()
         self._item_widgets.clear()
 
         query = (text or self.input_pass.text() or "").strip().lower()
@@ -149,20 +132,17 @@ class View_Password(QWidget):
         # estirador final para empujar al inicio
         self.vbox.addStretch(1)
 
-        self.setUpdatesEnabled(True)
-
     def _matches_filter(self, rec: dict, query: str) -> bool:
         if not query:
             return True
         hay = f"{rec.get('sitio','')} {rec.get('usuario','')}".lower()
         return query in hay
 
-    def _insert_item_widget(self, rec: dict) -> QWidget:
+    def _insert_item_widget(self, rec: dict):
         card = self._build_card(rec)
         # Inserta antes del stretch final
-        self.vbox.insertWidget(max(self.vbox.count() - 1, 0), card)
+        self.vbox.addWidget(card)  # basta así; si quieres, alinéalo arriba:
         self._item_widgets.append(card)
-        return card
 
     # ================== UI de cada card ==================
     def _build_card(self, rec: dict) -> QWidget:
@@ -180,14 +160,14 @@ class View_Password(QWidget):
             QFrame {
                 background: #FFFFFF;
                 border: 1px solid #E5E7EB;
-                border-radius: 10px;
+                border-radius: 10px;       
             }
         """)
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(25)
-        shadow.setXOffset(4)
-        shadow.setYOffset(6)
-        shadow.setColor(QColor(0, 0, 0, 55))
+        shadow.setBlurRadius(25)              # Qué tan difusa la sombra
+        shadow.setXOffset(4)                  # Desplazamiento horizontal
+        shadow.setYOffset(6)                  # Desplazamiento vertical
+        shadow.setColor(QColor(0, 0, 0, 55))  # Color negro con 60/255 de opacidad
         card.setGraphicsEffect(shadow)
 
         lay = QHBoxLayout(card)
@@ -202,6 +182,7 @@ class View_Password(QWidget):
         lbl_user.setStyleSheet("font-size: 16px; color: #000000; border: none;")
         left.addWidget(lbl_site)
         left.addWidget(lbl_user)
+        
         lay.addLayout(left, 21)
 
         # Campo contraseña (oculta, solo lectura)
@@ -210,6 +191,7 @@ class View_Password(QWidget):
         pwd.setReadOnly(True)
         pwd.setEchoMode(QLineEdit.EchoMode.Password)
         pwd.setFixedWidth(340)
+
         pwd.setMinimumWidth(120)
         pwd.setMaximumWidth(180)  # evita que empuje los botones
         pwd.setStyleSheet("""
@@ -218,7 +200,7 @@ class View_Password(QWidget):
                 background: #FFFFFF;
                 border: none;
                 border-radius: 10px;
-                padding: 6px 10px;
+                padding: 6px 10px; 
                 font-family: "Courier New", monospace;
                 color: black;
                 font-weight: bold;
@@ -232,7 +214,7 @@ class View_Password(QWidget):
         btn_eye.setCursor(Qt.CursorShape.PointingHandCursor)
         btn_eye.setIcon(QIcon("assets/eye-closed.png"))  # inicia oculto
         btn_eye.setIconSize(QSize(28, 28))
-        btn_eye.setFixedSize(44, 40)
+        btn_eye.setFixedSize(44, 40)                     # <-- ancho correcto
         btn_eye.setToolTip("Ver contraseña")
         btn_eye.setStyleSheet("""
             QToolButton {
@@ -245,40 +227,50 @@ class View_Password(QWidget):
             QToolButton:pressed { background: #E5E7EB; }
         """)
 
+        """
+        eyeShadow = QGraphicsDropShadowEffect(btn_eye)
+        eyeShadow.setBlurRadius(18)
+        eyeShadow.setXOffset(0)
+        eyeShadow.setYOffset(2)
+        eyeShadow.setColor(QColor(0, 0, 0, 40))
+        btn_eye.setGraphicsEffect(eyeShadow)
+        """
+
         def _toggle():
             if pwd.echoMode() == QLineEdit.EchoMode.Password:
                 pwd.setEchoMode(QLineEdit.EchoMode.Normal)
                 btn_eye.setIcon(QIcon("assets/eye-open.png"))
                 pwd.setStyleSheet("""
                     QLineEdit {
-                        font-size: 20px;
-                        background: #F3F4F6;
-                        border: none;
-                        border-radius: 10px;
-                        padding: 6px 10px;
-                        font-family: "Courier New", monospace;
-                        color: black;
-                        font-weight: bold;
-                    }""")
+                font-size: 20px;
+                background: #F3F4F6;
+                border: none;
+                border-radius: 10px;
+                padding: 6px 10px; 
+                font-family: "Courier New", monospace;
+                color: black;
+                font-weight: bold;
+                }                """)
                 btn_eye.setToolTip("Ocultar contraseña")
             else:
                 pwd.setEchoMode(QLineEdit.EchoMode.Password)
                 btn_eye.setIcon(QIcon("assets/eye-closed.png"))
                 btn_eye.setToolTip("Ver contraseña")
                 pwd.setStyleSheet("""
-                    QLineEdit {
-                        font-size: 20px;
-                        background: #FFFFFF;
-                        border: none;
-                        border-radius: 10px;
-                        padding: 6px 10px;
-                        font-family: "Courier New", monospace;
-                        color: black;
-                        font-weight: bold;
-                    }
-                """)
+                QLineEdit {
+                    font-size: 20px;
+                    background: #FFFFFF;
+                    border: none;
+                    border-radius: 10px;
+                    padding: 6px 10px; 
+                    font-family: "Courier New", monospace;
+                    color: black;
+                    font-weight: bold;
+                }
+            """)
         btn_eye.clicked.connect(_toggle)
         lay.addWidget(btn_eye)
+
 
         # Botón copiar
         btn_copy = QToolButton(card)
@@ -298,6 +290,15 @@ class View_Password(QWidget):
             QToolButton:pressed { background: #E5E7EB; }
         """)
 
+        """
+        eyeShadow = QGraphicsDropShadowEffect(btn_eye)
+        eyeShadow.setBlurRadius(18)
+        eyeShadow.setXOffset(0)
+        eyeShadow.setYOffset(2)
+        eyeShadow.setColor(QColor(0, 0, 0, 40))
+        btn_eye.setGraphicsEffect(eyeShadow)
+        """
+
         def _copy():
             pwd.selectAll()
             pwd.copy()
@@ -305,3 +306,4 @@ class View_Password(QWidget):
         lay.addWidget(btn_copy)
 
         return card
+
