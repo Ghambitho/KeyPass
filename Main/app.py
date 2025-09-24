@@ -21,6 +21,9 @@ from Main.PerfilWindow import Perfil_Window
 from Main.login_view import LoginView
 from Main.password import View_Password
 from Main.signup_view import SignupView   # <-- vista de registro
+from Logic.session import has_session, load_session, clear_session
+from Logic.login import get_user_profile
+from Logic.database_init import init_database
 
 
 class Ventana(QWidget):
@@ -30,32 +33,36 @@ class Ventana(QWidget):
         self.setGeometry(20, 20, 900, 500)
         self.setStyleSheet("background-color: #FEFEFE;")
 
-        # Layout principal
+        self.current_user_id = None
+        
+        # Inicializar base de datos
+        init_database()
+
+        # --- Layout principal + Stack ---
         self.layout = QVBoxLayout(self)
         self.setLayout(self.layout)
 
-        # QStackedWidget para gestionar pantallas
         self.stack = QStackedWidget()
         self.layout.addWidget(self.stack)
 
-        # Instancias de pantallas
+        # --- Instancias de pantallas ---
         self.pantalla_principal = PasswordGenerator()
         self.perfil_widget = Perfil_Window()
         self.password_widget = View_Password()
         self.login_view = LoginView()
         self.signup_view = SignupView()
+        
+        # Pasar referencia de la ventana principal al generador
+        self.pantalla_principal.main_window = self
 
-        # Añadir pantallas al stack
+        # --- Agregar pantallas al stack ---
         self.stack.addWidget(self.login_view)          # index 0
         self.stack.addWidget(self.signup_view)         # index 1
         self.stack.addWidget(self.pantalla_principal)  # index 2
         self.stack.addWidget(self.perfil_widget)       # index 3
         self.stack.addWidget(self.password_widget)     # index 4
 
-        # Arrancar mostrando el login
-        self.stack.setCurrentWidget(self.login_view)
-
-        # Botón menú (hamburguesa)
+        # --- Botón menú (hamburguesa) ---
         self.btn_ventana = QPushButton("\u2630", self)
         self.btn_ventana.setGeometry(800, 20, 50, 30)
         self.btn_ventana.setStyleSheet("""
@@ -74,14 +81,20 @@ class Ventana(QWidget):
         self.btn_ventana.clicked.connect(self.mostrar_menu_centrado)
         self.btn_ventana.setEnabled(False)
 
-        # Flujo de autenticación
-        def _on_auth():
+        # --- Pantalla inicial por defecto: Login ---
+        self.stack.setCurrentWidget(self.login_view)
+
+        # --- Flujo de autenticación ---
+        def _on_auth(user_id):
+            # Recibir user_id directamente del login
+            self.current_user_id = user_id
             self.btn_ventana.setEnabled(True)
             self.mostrar_generador()
 
         self.login_view.authenticated.connect(_on_auth)
         self.login_view.ask_signup.connect(lambda: self.stack.setCurrentWidget(self.signup_view))
         self.signup_view.back_to_login.connect(lambda: self.stack.setCurrentWidget(self.login_view))
+        # Para signup, recibir el user_id directamente
         self.signup_view.registered.connect(_on_auth)
 
         # Refresco inmediato cuando se guarda una contraseña
@@ -89,11 +102,25 @@ class Ventana(QWidget):
             lambda payload: getattr(self.password_widget, "refresh", lambda: None)()
         )
 
+        # --- Autologin si existe sesión válida (AHORA que todo ya existe) ---
+        try:
+            s = load_session()
+            if s and isinstance(s, dict) and "user" in s:
+                self.current_user_id = int(s["user"])
+                self.btn_ventana.setEnabled(True)
+                self.stack.setCurrentWidget(self.pantalla_principal)
+            else:
+                self.stack.setCurrentWidget(self.login_view)
+        except Exception:
+            self.stack.setCurrentWidget(self.login_view)
+
     def mostrar_menu_centrado(self):
         menu = QMenu(self)
         menu.addAction("Profile", self.mostrar_perfil)
         menu.addAction("Generator", self.mostrar_generador)
         menu.addAction("Password", self.mostrar_password)
+        menu.addSeparator()
+        menu.addAction("Sign out", self.sign_out)
         menu.setStyleSheet("""
             QMenu {
                 background-color: #020C17;
@@ -112,15 +139,30 @@ class Ventana(QWidget):
         menu_pos = QPoint(button_center.x() - 50, button_center.y() + 15)
         menu.exec(menu_pos)
 
+    def sign_out(self):
+        try:
+            clear_session()
+        except Exception:
+            pass
+        self.current_user_id = None
+        self.btn_ventana.setEnabled(False)
+        self.stack.setCurrentWidget(self.login_view)
+
     def mostrar_perfil(self):
+        # Pasar el user_id actual al perfil
+        if hasattr(self.perfil_widget, 'set_current_user'):
+            self.perfil_widget.set_current_user(self.current_user_id)
         self.stack.setCurrentWidget(self.perfil_widget)
 
     def mostrar_generador(self):
         self.stack.setCurrentWidget(self.pantalla_principal)
 
     def mostrar_password(self):
+        # Pasar el user_id actual al password widget
+        if hasattr(self.password_widget, 'set_current_user'):
+            self.password_widget.set_current_user(self.current_user_id)
         # Refresca al entrar, para garantizar que se vea lo último
-        if hasattr(self.password_widget, "refresh"):
+        elif hasattr(self.password_widget, "refresh"):
             self.password_widget.refresh()
         self.stack.setCurrentWidget(self.password_widget)
 
@@ -337,9 +379,12 @@ class PasswordGenerator(QWidget):
         usuario = self.input_usuario.text().strip()
         sitio = self.input_sitio.text().strip()
         if usuario and sitio:
-            save_password(sitio, usuario, pwd)
-            # Notificar que hay una contraseña nueva (para refrescar otras vistas)
-            self.password_saved.emit({"site": sitio, "user": usuario})
+            # Obtener user_id de la ventana principal
+            user_id = getattr(self.main_window, 'current_user_id', None)
+            if user_id:
+                save_password(sitio, usuario, pwd, user_id)
+                # Notificar que hay una contraseña nueva (para refrescar otras vistas)
+                self.password_saved.emit({"site": sitio, "user": usuario})
 
 
 if __name__ == "__main__":

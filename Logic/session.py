@@ -1,11 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-Manejo de sesión persistente (Recordar sesión) usando Fernet.
-Guarda un pequeño JSON cifrado con el identificador del usuario y fecha.
-Archivos:
-  - session.key: clave Fernet
-  - session.bin: sesión cifrada
-"""
+
 from pathlib import Path
 import json, time
 from cryptography.fernet import Fernet
@@ -27,7 +21,7 @@ def _get_or_create_key() -> bytes:
 def _fernet() -> Fernet:
     return Fernet(_get_or_create_key())
 
-def save_session(user_id: str, ttl_days: int = 30) -> None:
+def save_session(user_id: int, ttl_days: int = 30) -> None:
     """Guarda la sesión del usuario por un tiempo (TTL) dado en días."""
     payload = {"user": user_id, "ts": int(time.time()), "ttl": ttl_days * 86400}
     token = _fernet().encrypt(json.dumps(payload).encode("utf-8"))

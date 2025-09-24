@@ -17,8 +17,8 @@ from Logic.login import create_user, user_exists
 
 
 class SignupView(QWidget):
-    registered    = pyqtSignal()  # se emite cuando el usuario fue creado
-    back_to_login = pyqtSignal()  # volver a la pantalla de login
+    registered    = pyqtSignal(int)  # se emite cuando el usuario fue creado, con user_id
+    back_to_login = pyqtSignal()     # volver a la pantalla de login
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -85,7 +85,7 @@ class SignupView(QWidget):
 
         # Aceptar términos
         terms_row = QHBoxLayout(); terms_row.setSpacing(8)
-        self.chk_terms = QCheckBox("", card)
+        self.chk_terms = QCheckBox("I agree to", card)
         self.chk_terms.setStyleSheet("""
          QCheckBox {
                 background: transparent;
@@ -115,7 +115,7 @@ class SignupView(QWidget):
             }                                     
         """)
         lbl_terms = QLabel(
-            'I agree to <a href="https://example.com/terms">Terms</a> & '
+            ' <a href="https://example.com/terms">Terms</a> & '
             '<a href="https://example.com/privacy">Privacy Policy</a>', card
         )
         lbl_terms.setOpenExternalLinks(True)
@@ -212,8 +212,8 @@ class SignupView(QWidget):
 
         # Crear usuario
         try:
-            create_user(email, name, pw1)  # usa tu tabla 'login' (email, usuario, pass)
+            user_id = create_user(email, name, pw1)  # usa tu tabla 'login' (email, usuario, pass)
             self._ok("Account created. You can sign in now.")
-            self.registered.emit()         # si quieres entrar directo, ya lo conectaste en app.py
+            self.registered.emit(user_id)  # emitir con el user_id del nuevo usuario
         except Exception as e:
             self._error(f"Error creating user: {e}")

@@ -8,7 +8,9 @@ from typing import Optional, Tuple
 
 # Ruta al mismo .db que usa storage.py
 BASE = Path(__file__).resolve().parent.parent
-DB_FILE = BASE / "db" / "keypass.db"
+DB_DIR = BASE / "db"
+DB_DIR.mkdir(exist_ok=True)  # Crear directorio si no existe
+DB_FILE = DB_DIR / "keypass.db"
 
 # Formato de almacenamiento de contraseña:
 # pbkdf2_sha256$<iterations>$<salt_hex>$<hash_hex>
@@ -52,7 +54,6 @@ def _decode_record(record: str) -> Optional[Tuple[int, bytes, bytes]]:
 def _sha256_hex(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
-
 # ---------------------- API pública ----------------------
 def user_exists(email: str = "", usuario: str = "") -> bool:
     email = (email or "").strip()
@@ -69,12 +70,8 @@ def user_exists(email: str = "", usuario: str = "") -> bool:
 
 
 def create_user(email: str, usuario: str, password: str) -> int:
-    """
-    Crea un usuario con contraseña PBKDF2 y devuelve el id insertado.
-    Lanza sqlite3.IntegrityError si hay duplicados (si tienes UNIQUE en email/usuario).
-    """
-    email = email.strip()
-    usuario = usuario.strip()
+    email = email.strip().lower()
+    usuario = usuario.strip().lower()
 
     salt = os.urandom(SALT_BYTES)
     dk = _pbkdf2(password, salt, DEFAULT_ITER)
@@ -169,3 +166,61 @@ def _migrate_to_pbkdf2(user_id: int, password: str, conn: sqlite3.Connection) ->
     cur = conn.cursor()
     cur.execute("UPDATE login SET pass=? WHERE id=?", (record, user_id))
     conn.commit()
+
+def get_user_profile(user_id: int) -> tuple | None:
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT email, usuario FROM login WHERE id=?",
+        (user_id,)
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+def update_user_profile(user_id: int, new_email: str, new_usuario: str) -> bool:
+    """Actualiza el perfil del usuario"""
+    try:
+        new_email = new_email.strip()
+        new_usuario = new_usuario.strip()
+        
+        if not new_email or not new_usuario:
+            return False
+        
+        conn = _conn()
+        cur = conn.cursor()
+        
+        # Verificar que no esté en uso por otro usuario
+        cur.execute(
+            "SELECT id FROM login WHERE (email=? OR usuario=?) AND id!=?",
+            (new_email, new_usuario, user_id)
+        )
+        if cur.fetchone():
+            conn.close()
+            return False
+        
+        # Actualizar
+        cur.execute(
+            "UPDATE login SET email=?, usuario=? WHERE id=?",
+            (new_email, new_usuario, user_id)
+        )
+        conn.commit()
+        conn.close()
+        return True
+    except Exception:
+        return False
+    
+def get_user_id(login: str) -> int | None:
+    """
+    Devuelve el id del usuario para email o usuario dado; None si no existe.
+    """
+    login = (login or "").strip().lower()
+    if not login:
+        return None
+    conn = _conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM login WHERE email=? OR usuario=? LIMIT 1", (login, login))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None

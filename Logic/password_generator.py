@@ -9,5 +9,5 @@ def generate_password(longitud, incluir_mayusculas=True, incluir_numeros=True, i
     if incluir_numeros:
         caracteres += string.digits
     if incluir_simbolos:
-        caracteres += "!@#$%&()_-+^*?"
+        caracteres += "{[|'}¬¦!£$]%^&<:*>;#~_-+=,@"
     return ''.join(random.choices(caracteres, k=int(longitud)))

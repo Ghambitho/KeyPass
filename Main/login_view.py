@@ -5,12 +5,12 @@ from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
-from Logic.login import verify_user
-
+from Logic.login import verify_user, get_user_id
+from Logic.session import save_session
 
 class LoginView(QWidget):
-    authenticated = pyqtSignal()   # emitido si el login es correcto
-    ask_signup    = pyqtSignal()   # para abrir registro
+    authenticated = pyqtSignal(int)   # emitido si el login es correcto, con user_id
+    ask_signup    = pyqtSignal()      # para abrir registro
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -249,9 +249,18 @@ class LoginView(QWidget):
             return
         ok = verify_user(login, pw)
         if ok:
+            # Obtener id y guardar sesión si se pidió
+            uid = get_user_id(login)
+            if uid is not None and self.remember.isChecked():
+                try:
+                    save_session(uid, ttl_days=30)
+                except Exception:
+                    pass  # no rompemos el flujo si falla el guardado
+
             self.msg.setStyleSheet("color:#065F46;")
             self.msg.setText("Signed in.")
-            self.authenticated.emit()
+            # Emitir con el user_id
+            self.authenticated.emit(uid if uid is not None else 0)
         else:
             self.msg.setStyleSheet("color:#B91C1C;")
             self.msg.setText("Invalid credentials.")
