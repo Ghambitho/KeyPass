@@ -24,13 +24,14 @@ from Main.signup_view import SignupView   # <-- vista de registro
 from Logic.session import has_session, load_session, clear_session
 from Logic.login import get_user_profile
 from Logic.database_init import init_database
+import config
 
 
 class Ventana(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Generador de Contraseñas")
-        self.setFixedSize(900, 600)
+        self.setWindowTitle(config.WINDOW_TITLE)
+        self.setFixedSize(config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
         self.setStyleSheet("background-color: #F6F7FB;")
         
         # Crear barra de título personalizada
@@ -164,6 +165,7 @@ class Ventana(QWidget):
             }
             QPushButton:hover {
                 background-color: #366CF0;
+                color: white;
             }
         """)
         self.minimize_btn.clicked.connect(self.showMinimized)
@@ -182,6 +184,7 @@ class Ventana(QWidget):
             }
             QPushButton:hover {
                 background-color: #A32114;
+                color: white;
             }
         """)
         self.close_btn.clicked.connect(self.close)

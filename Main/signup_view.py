@@ -7,6 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from Logic.login import create_user, user_exists
 from Logic.session import save_session
+import config
 
 class SignupView(QWidget):
     registered = pyqtSignal(int)
@@ -14,7 +15,7 @@ class SignupView(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(900, 600)
+        self.setFixedSize(config.WINDOW_WIDTH, config.WINDOW_HEIGHT)
         self._create_ui()
         self._connect_events()
 
@@ -249,8 +250,8 @@ class SignupView(QWidget):
             self._error("Username must be at least 3 characters long.")
             return
             
-        if len(password) < 6:
-            self._error("Password must be at least 6 characters long.")
+        if len(password) < config.MIN_PASSWORD_LENGTH:
+            self._error(f"Password must be at least {config.MIN_PASSWORD_LENGTH} characters long.")
             return
             
         if password != password_confirm:
@@ -276,7 +277,7 @@ class SignupView(QWidget):
             if user_id:
                 # Guardar sesión automáticamente
                 try:
-                    save_session(user_id, ttl_days=30)
+                    save_session(user_id, ttl_days=config.DEFAULT_TTL_DAYS)
                 except Exception:
                     pass
                 

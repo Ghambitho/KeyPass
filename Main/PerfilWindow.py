@@ -34,7 +34,7 @@ class Perfil_Window(QWidget):
 
         # Frame principal de la tarjeta
         card = QFrame(self)
-        card.setGeometry(210, 40, 480, 520)
+        card.setGeometry(210, 20, 480, 520)
         card.setStyleSheet("""
             QFrame {
                 background: white;
@@ -44,7 +44,7 @@ class Perfil_Window(QWidget):
         """)
         # Título
         self.title = QLabel("Profile Settings", self)
-        self.title.setGeometry(300, 20, 300, 40)
+        self.title.setGeometry(300, 10, 300, 40)
         self.title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.title.setStyleSheet("font-size: 26px; font-weight: bold; color: #1f2937; background: white; border: 2px solid #e5e7eb; border-radius: 12px;")
         

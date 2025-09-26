@@ -2,11 +2,12 @@
 from pathlib import Path
 from Logic.encryption import get_encryption_key
 import sqlite3
+import config
 
 BASE = Path(__file__).resolve().parent.parent
-DB_DIR = BASE / "db"
+DB_DIR = BASE / config.DB_PATH
 DB_DIR.mkdir(exist_ok=True)  # Crear directorio si no existe
-DB_FILE = DB_DIR / "keypass.db"
+DB_FILE = DB_DIR / config.DB_NAME
 
 
 def _load_all_passwords(user_id):

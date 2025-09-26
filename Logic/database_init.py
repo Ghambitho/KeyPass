@@ -1,8 +1,10 @@
 import sqlite3
 from pathlib import Path
+import config
+
 BASE = Path(__file__).resolve().parent.parent
-DB_DIR = BASE / "db"
-DB_FILE = DB_DIR / "keypass.db"
+DB_DIR = BASE / config.DB_PATH
+DB_FILE = DB_DIR / config.DB_NAME
 
 def init_database():
     try:

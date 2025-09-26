@@ -227,6 +227,78 @@ class View_Password(QWidget):
 
         rec_id = rec.get("id")  # requiere que storage devuelva 'id'
         
+        # Botón Editar
+        btn_edit = QToolButton(card)
+        btn_edit.setText("Edit")
+        btn_edit.setToolTip("Editar esta contraseña")
+        btn_edit.setStyleSheet("""
+            QToolButton {
+                background: #3B82F6;
+                color: white;
+                font-family: Helvetica;
+                font-size: 12px;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QToolButton:hover { background: #2563EB; }
+            QToolButton:pressed { background: #1D4ED8; }
+        """)
+        
+        def _edit():
+            if not self.user_id:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("No hay usuario en sesión.")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setStyleSheet(" Color: black; ")
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                return
+                
+            if rec_id is None:
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("No se encontró el identificador del registro.")
+                msg.setStyleSheet(" Color: black; ")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                return
+            
+            # Abrir diálogo de edición
+            dlg = EditPasswordDialog(self, sitio, usuario, password)
+            dlg.setWindowTitle("Edit Password")
+            dlg.setStyleSheet("background: #FEFEFE; Color: black;")
+            if dlg.exec() == QDialog.DialogCode.Accepted:
+                new_sitio, new_usuario, new_clave = dlg.get_data()
+                if new_sitio and new_usuario and new_clave:
+                    try:
+                        # Eliminar el registro antiguo
+                        delete_password(rec_id, self.user_id)
+                        # Crear el nuevo registro
+                        save_password(new_sitio, new_usuario, new_clave, self.user_id)
+                        # Mostrar mensaje de éxito
+                        success_msg = QMessageBox(self)
+                        success_msg.setWindowTitle("Éxito")
+                        success_msg.setText(f"Contraseña de '{new_sitio}' actualizada correctamente.")
+                        success_msg.setStyleSheet(" Color: black; ")
+                        success_msg.setIcon(QMessageBox.Icon.Information)
+                        success_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        success_msg.exec()
+                        self.refresh()
+                    except Exception as e:
+                        error_msg = QMessageBox(self)
+                        error_msg.setWindowTitle("Error")
+                        error_msg.setText(f"Error al actualizar: {str(e)}")
+                        error_msg.setIcon(QMessageBox.Icon.Critical)
+                        error_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        error_msg.exec()
+        
+        btn_edit.clicked.connect(_edit)
+        lay.addWidget(btn_edit)
+        
+        # Botón Eliminar
         btn_del = QToolButton(card)
         btn_del.setText("Delete")
         btn_del.setToolTip("Eliminar esta contraseña")
@@ -501,6 +573,138 @@ class AddPasswordDialog(QDialog):
         btn_cancel.clicked.connect(self.reject)
         row.addStretch(1)
         row.addWidget(btn_ok)
+        row.addWidget(btn_cancel)
+        form.addRow(row)
+
+    def get_data(self):
+        return (self.input_site.text().strip(), self.input_user.text().strip(), self.input_pass.text().strip())
+
+
+class EditPasswordDialog(QDialog):
+    def __init__(self, parent=None, sitio="", usuario="", password=""):
+        super().__init__(parent)
+        self.setWindowTitle("Edit Password")
+        self.setFixedSize(400, 250)
+        form = QFormLayout(self)
+
+        self.input_site = QLineEdit(self)
+        self.input_site.setPlaceholderText("Site")
+        self.input_site.setText(sitio)
+        self.input_site.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #E5E7EB;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border-color: #3B82F6;
+            }
+        """)
+
+        self.input_user = QLineEdit(self)
+        self.input_user.setPlaceholderText("Username")
+        self.input_user.setText(usuario)
+        self.input_user.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #E5E7EB;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border-color: #3B82F6;
+            }
+        """)
+
+        self.input_pass = QLineEdit(self)
+        self.input_pass.setPlaceholderText("Password")
+        self.input_pass.setText(password)
+        self.input_pass.setEchoMode(QLineEdit.EchoMode.Password)
+        self.input_pass.setStyleSheet("""
+            QLineEdit {
+                padding: 8px;
+                border: 2px solid #E5E7EB;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border-color: #3B82F6;
+            }
+        """)
+
+        # Botón para mostrar/ocultar contraseña
+        self.btn_toggle_pass = QPushButton("👁", self)
+        self.btn_toggle_pass.setFixedSize(30, 30)
+        self.btn_toggle_pass.setStyleSheet("""
+            QPushButton {
+                background: #F3F4F6;
+                border: 2px solid #E5E7EB;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background: #E5E7EB;
+            }
+        """)
+        
+        def toggle_password():
+            if self.input_pass.echoMode() == QLineEdit.EchoMode.Password:
+                self.input_pass.setEchoMode(QLineEdit.EchoMode.Normal)
+                self.btn_toggle_pass.setText("🙈")
+            else:
+                self.input_pass.setEchoMode(QLineEdit.EchoMode.Password)
+                self.btn_toggle_pass.setText("👁")
+        
+        self.btn_toggle_pass.clicked.connect(toggle_password)
+
+        # Layout para contraseña con botón
+        pass_layout = QHBoxLayout()
+        pass_layout.addWidget(self.input_pass)
+        pass_layout.addWidget(self.btn_toggle_pass)
+
+        form.addRow("Site:", self.input_site)
+        form.addRow("Username:", self.input_user)
+        form.addRow("Password:", pass_layout)
+
+        # Botones
+        row = QHBoxLayout()
+        btn_save = QPushButton("Save Changes", self)
+        btn_save.setStyleSheet("""
+            QPushButton {
+                background: #3B82F6;
+                color: white;
+                font-family: Helvetica;
+                font-size: 14px;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                min-width: 100px;
+            }
+            QPushButton:hover { background: #2563EB; }
+            QPushButton:pressed { background: #1D4ED8; }
+        """)
+        btn_save.clicked.connect(self.accept)
+        
+        btn_cancel = QPushButton("Cancel", self)
+        btn_cancel.setStyleSheet("""
+            QPushButton {
+                background: #6B7280;
+                color: white;
+                font-family: Helvetica;
+                font-size: 14px;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 16px;
+                min-width: 100px;
+            }
+            QPushButton:hover { background: #4B5563; }
+            QPushButton:pressed { background: #374151; }
+        """)
+        btn_cancel.clicked.connect(self.reject)
+        
+        row.addStretch(1)
+        row.addWidget(btn_save)
         row.addWidget(btn_cancel)
         form.addRow(row)
 

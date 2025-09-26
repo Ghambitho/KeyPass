@@ -5,18 +5,19 @@ import sqlite3
 import hashlib
 from pathlib import Path
 from typing import Optional, Tuple
+import config
 
 # Ruta al mismo .db que usa storage.py
 BASE = Path(__file__).resolve().parent.parent
-DB_DIR = BASE / "db"
+DB_DIR = BASE / config.DB_PATH
 DB_DIR.mkdir(exist_ok=True)  # Crear directorio si no existe
-DB_FILE = DB_DIR / "keypass.db"
+DB_FILE = DB_DIR / config.DB_NAME
 
 # Formato de almacenamiento de contraseña:
 # pbkdf2_sha256$<iterations>$<salt_hex>$<hash_hex>
-ALGO = "pbkdf2_sha256"
-DEFAULT_ITER = 200_000
-SALT_BYTES = 16
+ALGO = config.ENCRYPTION_ALGORITHM
+DEFAULT_ITER = config.DEFAULT_ITERATIONS
+SALT_BYTES = config.SALT_BYTES
 
 
 # ---------------------- helpers de DB ----------------------

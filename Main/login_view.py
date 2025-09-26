@@ -152,44 +152,6 @@ class LoginView(QWidget):
         div.addWidget(lineR, 1)
         cl.addLayout(div)
 
-        # Botones sociales
-        social = QHBoxLayout()
-        
-        self.btn_google = QPushButton(" Google", card)
-        self.btn_google.setIcon(QIcon("assets/google.png"))
-        self.btn_google.setIconSize(QSize(18, 18))
-        self.btn_google.setStyleSheet("""
-            QPushButton {
-                background: #FFFFFF;
-                border: 1px solid #E5E7EB;
-                border-radius: 12px;
-                padding: 12px 16px;
-                font-size: 16px;
-                color: #374151;
-            }
-            QPushButton:hover { background: #F9FAFB; }
-        """)
-
-        self.btn_apple = QPushButton(" Apple", card)
-        self.btn_apple.setIcon(QIcon("assets/apple.png"))
-        self.btn_apple.setIconSize(QSize(18, 18))
-        self.btn_apple.setStyleSheet("""
-            QPushButton {
-                background: #FFFFFF;
-                border: 1px solid #E5E7EB;
-                border-radius: 12px;
-                padding: 12px 16px;
-                font-size: 16px;
-                color: #374151;
-            }
-            QPushButton:hover { background: #F9FAFB; }
-        """)
-
-        social.addWidget(self.btn_google)
-        social.addStretch(1)
-        social.addWidget(self.btn_apple)
-        cl.addLayout(social)
-
         # Botón login
         self.btn_login = QPushButton("Log In", card)
         self.btn_login.setStyleSheet("""
@@ -226,8 +188,6 @@ class LoginView(QWidget):
 
         # Conectar eventos
         self.btn_login.clicked.connect(self._do_login)
-        self.btn_google.clicked.connect(lambda: self._info("Google sign-in not implemented."))
-        self.btn_apple.clicked.connect(lambda: self._info("Apple sign-in not implemented."))
         self.forgot.clicked.connect(lambda: self._info("Password reset flow not implemented."))
         self.link_signup.clicked.connect(self.ask_signup.emit)
 

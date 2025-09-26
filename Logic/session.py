@@ -3,26 +3,49 @@
 from pathlib import Path
 import json, time
 from cryptography.fernet import Fernet
+import keyring
+import getpass
+import config
 
 BASE = Path(__file__).resolve().parent.parent  # raíz del proyecto
-DB = BASE / "db"
+DB = BASE / config.DB_PATH
 DB.mkdir(exist_ok=True)
 
-KEY_FILE = DB / "session.key"
-SESSION_FILE = DB / "session.bin"
+SESSION_FILE = DB / config.SESSION_FILE
 
 def _get_or_create_key() -> bytes:
-    if KEY_FILE.exists():
-        return KEY_FILE.read_bytes()
-    key = Fernet.generate_key()
-    KEY_FILE.write_bytes(key)
+    """
+    Obtiene la clave de sesión desde el keyring del sistema.
+    """
+    service_name = "KeyPass-Session"
+    username = getpass.getuser()
+    
+    try:
+        # Intentar obtener clave del keyring
+        key_str = keyring.get_password(service_name, username)
+        
+        if key_str:
+            key = key_str.encode('utf-8')
+        else:
+            # Generar nueva clave
+            key = Fernet.generate_key()
+            # Guardar en keyring
+            keyring.set_password(service_name, username, key.decode('utf-8'))
+            print("✅ Session key created and saved to system keyring")
+            
+    except Exception as e:
+        # Si keyring falla, mostrar error claro
+        raise Exception(f"Failed to access system keyring for sessions: {e}. Please ensure keyring is properly configured.")
+    
     return key
 
 def _fernet() -> Fernet:
     return Fernet(_get_or_create_key())
 
-def save_session(user_id: int, ttl_days: int = 30) -> None:
+def save_session(user_id: int, ttl_days: int = None) -> None:
     """Guarda la sesión del usuario por un tiempo (TTL) dado en días."""
+    if ttl_days is None:
+        ttl_days = config.DEFAULT_TTL_DAYS
     payload = {"user": user_id, "ts": int(time.time()), "ttl": ttl_days * 86400}
     token = _fernet().encrypt(json.dumps(payload).encode("utf-8"))
     SESSION_FILE.write_bytes(token)
