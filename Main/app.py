@@ -9,8 +9,8 @@ if str(BASE) not in sys.path:
     sys.path.insert(0, str(BASE))
 
 from PyQt6.QtWidgets import (
-    QApplication, QWidget, QLabel, QLineEdit, QPushButton,
-    QCheckBox, QSlider, QGraphicsDropShadowEffect, QMenu, QStackedWidget, QVBoxLayout
+    QApplication, QWidget, QLabel, QLineEdit, QPushButton, QToolButton, QHBoxLayout,
+    QCheckBox, QSlider, QGraphicsDropShadowEffect, QMenu, QStackedWidget, QVBoxLayout, QFrame
 )
 from PyQt6.QtCore import Qt, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon
@@ -30,8 +30,16 @@ class Ventana(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Generador de Contraseñas")
-        self.setGeometry(20, 20, 900, 500)
-        self.setStyleSheet("background-color: #FEFEFE;")
+        self.setFixedSize(900, 600)
+        self.setStyleSheet("background-color: #F6F7FB;")
+        
+        # Crear barra de título personalizada
+        self._create_title_bar()
+
+        # Quitar la barra de título del sistema operativo
+        self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+
+      
 
         self.current_user_id = None
         
@@ -40,6 +48,7 @@ class Ventana(QWidget):
 
         # --- Layout principal + Stack ---
         self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 40, 0, 0)  # Margen superior para la barra de título
         self.setLayout(self.layout)
 
         self.stack = QStackedWidget()
@@ -64,7 +73,7 @@ class Ventana(QWidget):
 
         # --- Botón menú (hamburguesa) ---
         self.btn_ventana = QPushButton("\u2630", self)
-        self.btn_ventana.setGeometry(800, 20, 50, 30)
+        self.btn_ventana.setGeometry(800, 50, 50, 30)
         self.btn_ventana.setStyleSheet("""
             QPushButton {
                 background: #171C22;
@@ -96,6 +105,9 @@ class Ventana(QWidget):
         self.signup_view.back_to_login.connect(lambda: self.stack.setCurrentWidget(self.login_view))
         # Para signup, recibir el user_id directamente
         self.signup_view.registered.connect(_on_auth)
+        
+        # Conectar logout desde perfil
+        self.perfil_widget.logout_requested.connect(self.logout)
 
         # Refresco inmediato cuando se guarda una contraseña
         self.pantalla_principal.password_saved.connect(
@@ -114,13 +126,96 @@ class Ventana(QWidget):
         except Exception:
             self.stack.setCurrentWidget(self.login_view)
 
+    def _create_title_bar(self):
+        """Crea una barra de título personalizada"""
+        # Barra de título
+        self.title_bar = QFrame(self)
+        self.title_bar.setGeometry(0, 0, 900, 30)
+        self.title_bar.setStyleSheet("""
+            QFrame {
+                background-color: #F6F7FB;
+                border: none;
+            }
+        """)
+        
+        # Título de la aplicación
+        self.title_label = QLabel("KeyPass", self.title_bar)
+        self.title_label.setGeometry(15, 0, 300, 30)
+        self.title_label.setStyleSheet("""
+            QLabel {
+                color: black;
+                font-size: 14px;
+                font-weight: bold;
+                font-family: Helvetica;
+            }
+        """)
+        
+        # Botón minimizar
+        self.minimize_btn = QPushButton("−", self.title_bar)
+        self.minimize_btn.setGeometry(820, 2, 25, 25)
+        self.minimize_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: black;
+                border: none;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #366CF0;
+            }
+        """)
+        self.minimize_btn.clicked.connect(self.showMinimized)
+        
+        # Botón cerrar
+        self.close_btn = QPushButton("×", self.title_bar)
+        self.close_btn.setGeometry(860, 2, 25, 25)
+        self.close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: black;
+                border: none;
+                font-size: 18px;
+                font-weight: bold;
+                border-radius: 3px;
+            }
+            QPushButton:hover {
+                background-color: #A32114;
+            }
+        """)
+        self.close_btn.clicked.connect(self.close)
+        
+        # Variables para arrastrar la ventana
+        self.dragging = False
+        self.drag_position = QPoint()
+
+    def mousePressEvent(self, event):
+        """Maneja el clic del mouse para arrastrar la ventana"""
+        if event.button() == Qt.MouseButton.LeftButton:
+            # Solo arrastrar si se hace clic en la barra de título
+            if event.pos().y() <= 40:
+                self.dragging = True
+                self.drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+                event.accept()
+
+    def mouseMoveEvent(self, event):
+        """Maneja el movimiento del mouse para arrastrar la ventana"""
+        if event.buttons() == Qt.MouseButton.LeftButton and self.dragging:
+            self.move(event.globalPosition().toPoint() - self.drag_position)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        """Maneja la liberación del mouse"""
+        self.dragging = False
+
     def mostrar_menu_centrado(self):
         menu = QMenu(self)
         menu.addAction("Profile", self.mostrar_perfil)
         menu.addAction("Generator", self.mostrar_generador)
         menu.addAction("Password", self.mostrar_password)
         menu.addSeparator()
-        menu.addAction("Sign out", self.sign_out)
+        menu.addAction("Logout", self.logout)
         menu.setStyleSheet("""
             QMenu {
                 background-color: #020C17;
@@ -139,7 +234,7 @@ class Ventana(QWidget):
         menu_pos = QPoint(button_center.x() - 50, button_center.y() + 15)
         menu.exec(menu_pos)
 
-    def sign_out(self):
+    def logout(self):
         try:
             clear_session()
         except Exception:
@@ -173,9 +268,9 @@ class PasswordGenerator(QWidget):
 
     def __init__(self):
         super().__init__()
+      
 
-        self.setStyleSheet("background-color: #FEFEFE;")
-        self.setGeometry(0, 0, 900, 500)  # Tamaño dentro del stack
+        self.setStyleSheet("background-color: #F6F7FB;")
 
         # Título
         self.titulo = QLabel("Password Generator", self)
@@ -236,7 +331,7 @@ class PasswordGenerator(QWidget):
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui;
                 font-size: 16px;
                 color: #4a5568;
-                spacing: 12px;
+                spacing: 14px;
                 padding: 0px 4px;
             }
             QCheckBox::indicator {
@@ -257,24 +352,24 @@ class PasswordGenerator(QWidget):
             QCheckBox::indicator:checked:hover { background-color: #102A52; }
         '''
         self.chk_simbolos = QCheckBox("Include symbols", self)
-        self.chk_simbolos.setGeometry(110, 170, 200, 30)
+        self.chk_simbolos.setGeometry(110, 180, 200, 30)
         self.chk_simbolos.setStyleSheet(modern_checkbox_style)
 
         self.chk_numeros = QCheckBox("Include numbers", self)
-        self.chk_numeros.setGeometry(110, 200, 200, 30)
+        self.chk_numeros.setGeometry(110, 210, 200, 30)
         self.chk_numeros.setStyleSheet(modern_checkbox_style)
 
         self.chk_mayusculas = QCheckBox("Uppercase letters", self)
-        self.chk_mayusculas.setGeometry(110, 230, 200, 30)
+        self.chk_mayusculas.setGeometry(110, 240, 200, 30)
         self.chk_mayusculas.setStyleSheet(modern_checkbox_style)
 
         # Usuario / Sitio
         self.lbl_usuario = QLabel("User", self)
-        self.lbl_usuario.setGeometry(110, 270, 80, 27)
-        self.lbl_usuario.setStyleSheet('font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui; font-size: 14px; color: black; font-weight: bold;')
+        self.lbl_usuario.setGeometry(110, 290, 80, 27)
+        self.lbl_usuario.setStyleSheet('font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui; font-size: 18px; color: black; font-weight: bold;')
 
         self.input_usuario = QLineEdit(self)
-        self.input_usuario.setGeometry(150, 270, 200, 28)
+        self.input_usuario.setGeometry(150, 290, 200, 28)
         self.input_usuario.setStyleSheet('''
             QLineEdit {
                 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui;
@@ -295,22 +390,22 @@ class PasswordGenerator(QWidget):
         ''')
 
         self.lbl_sitio = QLabel("Site", self)
-        self.lbl_sitio.setGeometry(110, 300, 80, 27)
+        self.lbl_sitio.setGeometry(110, 330, 80, 27)
         self.lbl_sitio.setStyleSheet(self.lbl_usuario.styleSheet())
 
         self.input_sitio = QLineEdit(self)
-        self.input_sitio.setGeometry(150, 300, 200, 28)
+        self.input_sitio.setGeometry(150, 330, 200, 28)
         self.input_sitio.setStyleSheet(self.input_usuario.styleSheet())
 
         # Slider longitud
         self.lbl_longitud = QLabel("Password Length", self)
-        self.lbl_longitud.setGeometry(110, 350, 200, 20)
-        self.lbl_longitud.setStyleSheet('font-family: Helvetica; font-size: 18px; color: black;')
+        self.lbl_longitud.setGeometry(110, 400, 230, 20)
+        self.lbl_longitud.setStyleSheet('background: transparent; font-family: Helvetica; font-size: 24px; color: black; font-weight: bold;')
 
         self.slider = QSlider(Qt.Orientation.Horizontal, self)
         self.slider.setRange(6, 32)
         self.slider.setValue(14)
-        self.slider.setGeometry(110, 380, 600, 30)
+        self.slider.setGeometry(110, 430, 600, 30)
         self.slider.valueChanged.connect(self.actualizar_longitud)
         self.slider.setStyleSheet('''
             QSlider::groove:horizontal {
@@ -332,7 +427,7 @@ class PasswordGenerator(QWidget):
         ''')
 
         self.lbl_valor = QLabel("14", self)
-        self.lbl_valor.setGeometry(720, 380, 30, 30)
+        self.lbl_valor.setGeometry(720, 430, 30, 30)
         self.lbl_valor.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.lbl_valor.setStyleSheet('''
             QLabel {
@@ -344,7 +439,7 @@ class PasswordGenerator(QWidget):
 
         # Botón generar
         self.btn_generar = QPushButton("Generate Password", self)
-        self.btn_generar.setGeometry(350, 430, 230, 50)
+        self.btn_generar.setGeometry(320, 480, 230, 50)
         self.btn_generar.clicked.connect(self.generar_contrasena)
         self.btn_generar.setStyleSheet('''
             QPushButton {

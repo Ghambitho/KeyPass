@@ -1,98 +1,159 @@
 # -*- coding: utf-8 -*-
-import sys
-from pathlib import Path
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt, QSize, pyqtSignal
+from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
-    QFrame, QGraphicsDropShadowEffect, QCheckBox
+    QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
-
-# path-hack como en tu app
-BASE = Path(__file__).resolve().parent.parent
-if str(BASE) not in sys.path:
-    sys.path.insert(0, str(BASE))
-
 from Logic.login import create_user, user_exists
-
+from Logic.session import save_session
 
 class SignupView(QWidget):
-    registered    = pyqtSignal(int)  # se emite cuando el usuario fue creado, con user_id
-    back_to_login = pyqtSignal()     # volver a la pantalla de login
+    registered = pyqtSignal(int)
+    back_to_login = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._build_ui()
-        self._wire()
+        self.setFixedSize(900, 600)
+        self._create_ui()
+        self._connect_events()
 
-    # ---------- UI ----------
-    def _build_ui(self):
-        self.setStyleSheet(
-            "QWidget{background:#FEFEFE; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui;}"
-        )
+    def _create_ui(self):
+        """Crea la interfaz de usuario"""
+        self.setStyleSheet("""
+            QWidget {
+                background: #FAFAFA;
+                font-family: Helvetica;
+            }
+        """)
 
+        # Layout principal
         root = QVBoxLayout(self)
-        root.setContentsMargins(0, 40, 0, 40)
+        root.setContentsMargins(0, 10, 0, 40)
         root.setSpacing(0)
 
-        # Card contenedora
+        # Contenedor centrado
+        container_layout = QHBoxLayout()
+        container_layout.addStretch(1)
+        
+        # Card de registro
+        self.signup_card = self._create_signup_card()
+        container_layout.addWidget(self.signup_card, 0, Qt.AlignmentFlag.AlignCenter)
+        
+        container_layout.addStretch(1)
+        root.addLayout(container_layout)
+
+    def _create_signup_card(self):
+        """Crea la tarjeta de registro"""
         card = QFrame(self)
         card.setObjectName("card")
         card.setFixedWidth(560)
         card.setStyleSheet("""
             QFrame#card {
-                background:#FFFFFF;
-                border:1px solid #E5E7EB;
-                border-radius:16px;
+                background: #FFFFFF;
+                border: 1px solid #E5E7EB;
+                border-radius: 16px;
             }
-            QLineEdit {
-                background:#FFFFFF;
-                border:1px solid #E5E7EB;
-                border-radius:12px;
-                padding:14px 16px;
-                font-size:16px;
-                color: black;
-            }
-            QLineEdit:focus { border:1px solid #366CF0; }
         """)
+        
+        # Sombra
         shadow = QGraphicsDropShadowEffect()
-        shadow.setBlurRadius(36); shadow.setXOffset(0); shadow.setYOffset(14)
-        shadow.setColor(QColor(0,0,0,45))
+        shadow.setBlurRadius(36)
+        shadow.setXOffset(0)
+        shadow.setYOffset(14)
+        shadow.setColor(QColor(0, 0, 0, 45))
         card.setGraphicsEffect(shadow)
 
+        # Layout interno
         cl = QVBoxLayout(card)
         cl.setContentsMargins(32, 32, 32, 24)
         cl.setSpacing(16)
 
         # Título
-        title = QLabel("Create Your Account", card)
-        title.setStyleSheet("QLabel{font-size:32px; font-weight:800; color:#111827;}")
-        cl.addWidget(title)
+        self.title = QLabel("Create Account", card)
+        self.title.setStyleSheet("""
+            QLabel {
+                font-size: 32px;
+                font-weight: 800;
+                color: black;
+                background: transparent;
+            }
+        """)
+        cl.addWidget(self.title)
 
-        # Campos
-        self.in_name = QLineEdit(card);  self.in_name.setPlaceholderText("Full Name");      cl.addWidget(self.in_name)
-        self.in_email = QLineEdit(card); self.in_email.setPlaceholderText("Email Address"); cl.addWidget(self.in_email)
+        # Campo username
+        self.input_name = QLineEdit(card)
+        self.input_name.setPlaceholderText("Username")
+        self.input_name.setStyleSheet("""
+            QLineEdit {
+                background: #FFFFFF;
+                border: 1px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 14px 16px;
+                color: black;
+                font-size: 16px;
+            }
+            QLineEdit:focus { border: 1px solid #366CF0; }
+        """)
+        cl.addWidget(self.input_name)
 
-        self.in_pw1 = QLineEdit(card)
-        self.in_pw1.setPlaceholderText("Password")
-        self.in_pw1.setEchoMode(QLineEdit.EchoMode.Password)
-        cl.addWidget(self.in_pw1)
+        # Campo email
+        self.input_email = QLineEdit(card)
+        self.input_email.setPlaceholderText("Email Address")
+        self.input_email.setStyleSheet("""
+            QLineEdit {
+                background: #FFFFFF;
+                border: 1px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 14px 16px;
+                color: black;
+                font-size: 16px;
+            }
+            QLineEdit:focus { border: 1px solid #366CF0; }
+        """)
+        cl.addWidget(self.input_email)
 
-        self.in_pw2 = QLineEdit(card)
-        self.in_pw2.setPlaceholderText("Confirm Password")
-        self.in_pw2.setEchoMode(QLineEdit.EchoMode.Password)
-        cl.addWidget(self.in_pw2)
+        # Campo contraseña
+        self.input_pw = QLineEdit(card)
+        self.input_pw.setPlaceholderText("Password")
+        self.input_pw.setEchoMode(QLineEdit.EchoMode.Password)
+        self.input_pw.setStyleSheet("""
+            QLineEdit {
+                background: #FFFFFF;
+                border: 1px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 8px 8px;
+                font-size: 16px;
+                color: black;
+            }
+            QLineEdit:focus { border: 1px solid #366CF0; }
+        """)
+        cl.addWidget(self.input_pw)
 
-        # Aceptar términos
-        terms_row = QHBoxLayout(); terms_row.setSpacing(8)
-        self.chk_terms = QCheckBox("I agree to", card)
-        self.chk_terms.setStyleSheet("""
-         QCheckBox {
+        # Campo confirmar contraseña
+        self.input_pw_confirm = QLineEdit(card)
+        self.input_pw_confirm.setPlaceholderText("Confirm Password")
+        self.input_pw_confirm.setEchoMode(QLineEdit.EchoMode.Password)
+        self.input_pw_confirm.setStyleSheet("""
+            QLineEdit {
+                background: #FFFFFF;
+                border: 1px solid #E5E7EB;
+                border-radius: 12px;
+                padding: 8px 8px;
+                font-size: 16px;
+                color: black;
+            }
+            QLineEdit:focus { border: 1px solid #366CF0; }
+        """)
+        cl.addWidget(self.input_pw_confirm)
+
+        # Checkbox términos
+        self.terms = QCheckBox("I agree to the Terms and Conditions", card)
+        self.terms.setStyleSheet("""
+            QCheckBox {
                 background: transparent;
                 color: #111827;
                 font-size: 15px;
-                border: none;
-                border-radius: 5px;
             }
             QCheckBox::indicator {
                 width: 18px;
@@ -100,120 +161,128 @@ class SignupView(QWidget):
                 border: 2px solid #D1D5DB;
                 border-radius: 5px;
                 background: #FFFFFF;
-                margin-right: 8px;
-            }
-            QCheckBox::indicator:hover {
-                border: 2px solid #366CF0;
             }
             QCheckBox::indicator:checked {
                 background: #366CF0;
                 border-color: #366CF0;
             }
-            QCheckBox::indicator:checked:hover {
-                background: #2F5CD3;
-                border-color: #2F5CD3;
-            }                                     
         """)
-        lbl_terms = QLabel(
-            ' <a href="https://example.com/terms">Terms</a> & '
-            '<a href="https://example.com/privacy">Privacy Policy</a>', card
-        )
-        lbl_terms.setOpenExternalLinks(True)
-        lbl_terms.setStyleSheet("QLabel{color:#374151;}")
-        terms_row.addWidget(self.chk_terms, 0, Qt.AlignmentFlag.AlignLeft)
-        terms_row.addWidget(lbl_terms, 0, Qt.AlignmentFlag.AlignLeft)
-        terms_row.addStretch(1)
-        cl.addLayout(terms_row)
+        cl.addWidget(self.terms)
 
-        # Botón principal
-        self.btn_signup = QPushButton("Create Account", card)
+        # Botón signup
+        self.btn_signup = QPushButton("Sign Up", card)
         self.btn_signup.setStyleSheet("""
-            QPushButton{
-                background:#366CF0; color:#fff; border:none;
-                border-radius:12px; padding:12px 16px; font-size:18px; font-weight:600;
+            QPushButton {
+                background: #366CF0;
+                border: 1px solid #D1D5DB;
+                color: white;
+                border-radius: 12px;
+                padding: 14px 16px;
+                font-size: 18px;
+                font-weight: bold;
             }
-            QPushButton:hover{ background:#2F5CD3; }
-            QPushButton:pressed{ background:#001F69; }
+            QPushButton:hover { background: #3964CC; }
+            QPushButton:pressed { background: #001F69; }
         """)
         cl.addWidget(self.btn_signup)
 
-        # Link para volver a login
-        self.btn_back = QPushButton("Already have an account? Log In", card)
-        self.btn_back.setStyleSheet("""
-            QPushButton{ border:none; background:transparent; color:#366CF0; }
-            QPushButton:hover{ text-decoration:underline; }
-        """)
-        cl.addWidget(self.btn_back, 0, Qt.AlignmentFlag.AlignHCenter)
+        # Link de login
+        self.link_login = QPushButton("Already have an account? Sign In", card)
+        self.link_login.setStyleSheet(
+            "QPushButton { border:none; background:transparent; color:#366CF0; font-size:14px; }"
+            "QPushButton:hover { text-decoration: underline; }"
+        )
+        cl.addWidget(self.link_login, 0, Qt.AlignmentFlag.AlignLeft)
 
         # Mensajes
         self.msg = QLabel("", card)
         self.msg.setWordWrap(True)
         cl.addWidget(self.msg)
 
-        # Centrado vertical
-        wrap = QVBoxLayout()
-        wrap.addStretch(1)
-        wrap.addWidget(card, 0, Qt.AlignmentFlag.AlignHCenter)
-        wrap.addStretch(1)
-        root.addLayout(wrap)
+        return card
 
-    # ---------- eventos / lógica ----------
-    def _wire(self):
-        self.btn_back.clicked.connect(self.back_to_login.emit)
-        self.btn_signup.clicked.connect(self._do_create)
+    def _connect_events(self):
+        """Conecta los eventos"""
+        self.btn_signup.clicked.connect(self._do_signup)
+        self.link_login.clicked.connect(self.back_to_login.emit)
 
         # Enter para enviar
-        self.in_name.returnPressed.connect(self._do_create)
-        self.in_email.returnPressed.connect(self._do_create)
-        self.in_pw1.returnPressed.connect(self._do_create)
-        self.in_pw2.returnPressed.connect(self._do_create)
+        self.input_name.returnPressed.connect(self._do_signup)
+        self.input_email.returnPressed.connect(self._do_signup)
+        self.input_pw.returnPressed.connect(self._do_signup)
+        self.input_pw_confirm.returnPressed.connect(self._do_signup)
 
-    # Helpers de mensajes
+    def _info(self, text: str):
+        """Muestra información"""
+        self.msg.setStyleSheet("color:#6B7280;")
+        self.msg.setText(text)
+
     def _error(self, text: str):
-        self.msg.setStyleSheet("QLabel{color:#B91C1C;}")
+        """Muestra error"""
+        self.msg.setStyleSheet("color:#B91C1C;")
         self.msg.setText(text)
 
-    def _ok(self, text: str):
-        self.msg.setStyleSheet("QLabel{color:#065F46;}")
+    def _success(self, text: str):
+        """Muestra éxito"""
+        self.msg.setStyleSheet("color:#065F46;")
         self.msg.setText(text)
 
-    # Validaciones
     def _valid_email(self, email: str) -> bool:
-        if "@" not in email: return False
-        local, _, dom = email.partition("@")
-        return bool(local) and "." in dom and not dom.startswith(".") and not dom.endswith(".")
+        """Validación básica de email"""
+        return "@" in email and "." in email.split("@")[1]
 
-    def _do_create(self):
+    def _do_signup(self):
+        """Maneja el registro"""
         self.msg.clear()
-
-        name  = self.in_name.text().strip()   # se guardará como 'usuario'
-        email = self.in_email.text().strip()
-        pw1   = self.in_pw1.text()
-        pw2   = self.in_pw2.text()
-
-        # Checks
-        if not name or not email or not pw1 or not pw2:
-            self._error("All fields are required."); return
+        
+        name = self.input_name.text().strip()
+        email = self.input_email.text().strip()
+        password = self.input_pw.text()
+        password_confirm = self.input_pw_confirm.text()
+        
+        # Validaciones
+        if not name or not email or not password:
+            self._error("Please fill in all fields.")
+            return
+            
+        if len(name) < 3:
+            self._error("Username must be at least 3 characters long.")
+            return
+            
+        if len(password) < 6:
+            self._error("Password must be at least 6 characters long.")
+            return
+            
+        if password != password_confirm:
+            self._error("Passwords do not match.")
+            return
+            
         if not self._valid_email(email):
-            self._error("Invalid email address."); return
-        if pw1 != pw2:
-            self._error("Passwords do not match."); return
-        if len(pw1) < 8:
-            self._error("Password must be at least 8 characters."); return
-        if not self.chk_terms.isChecked():
-            self._error("You must agree to the Terms & Privacy Policy."); return
-
-        # Unicidad
-        try:
-            if user_exists(email=email, usuario=name):
-                self._error("Email or username already exists."); return
-        except Exception as e:
-            self._error(f"Error checking user: {e}"); return
-
+            self._error("Please enter a valid email address.")
+            return
+            
+        if not self.terms.isChecked():
+            self._error("Please agree to the Terms and Conditions.")
+            return
+        
+        # Verificar si ya existe
+        if user_exists(email, name):
+            self._error("Email or username already exists.")
+            return
+        
         # Crear usuario
         try:
-            user_id = create_user(email, name, pw1)  # usa tu tabla 'login' (email, usuario, pass)
-            self._ok("Account created. You can sign in now.")
-            self.registered.emit(user_id)  # emitir con el user_id del nuevo usuario
+            user_id = create_user(email, name, password)
+            if user_id:
+                # Guardar sesión automáticamente
+                try:
+                    save_session(user_id, ttl_days=30)
+                except Exception:
+                    pass
+                
+                self._success("Account created successfully!")
+                self.registered.emit(user_id)
+            else:
+                self._error("Failed to create account. Please try again.")
         except Exception as e:
-            self._error(f"Error creating user: {e}")
+            self._error(f"Error creating account: {str(e)}")

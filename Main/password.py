@@ -24,9 +24,7 @@ class View_Password(QWidget):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setObjectName("ViewPassword")
-        self.setStyleSheet("background: #FEFEFE;")
-        self.setGeometry(20, 30, 900, 500)
+        self.setStyleSheet("background: #FAFAFA;")
         
         # Inicializar user_id
         self.user_id = None
@@ -37,12 +35,14 @@ class View_Password(QWidget):
         self.titulo_saved.setStyleSheet("""
             font-family: Helvetica;
             font-size: 24px;
+            font-weight: bold;
             color: black; border: none;
+            background: transparent;
         """)
 
         self.input_pass = QLineEdit(self)
         self.input_pass.setPlaceholderText("search...")
-        self.input_pass.setGeometry(100, 90, 700, 60)
+        self.input_pass.setGeometry(90, 90, 700, 60)
         self.input_pass.setStyleSheet("""
             border: 3px solid #D4D2D2;
             border-radius: 10px;
@@ -54,15 +54,29 @@ class View_Password(QWidget):
 
         # Botón para agregar
         self.btn_add = QPushButton("+ Add", self)
-        self.btn_add.setGeometry(810, 90, 80, 60)
+        self.btn_add.setGeometry(800, 100, 60, 40)
+        self.btn_add.setStyleSheet("""
+            QPushButton {
+                background: #2563EB;
+                color: white;
+                font-family: Helvetica;
+                font-size: 14px;
+                border: none;
+                border-radius: 10px;
+                padding: 6px 12px;
+            }
+            QPushButton:hover { background: #1D4ED8; }
+            QPushButton:pressed { background: #1E40AF; }
+        """)
         self.btn_add.clicked.connect(self._open_add_dialog)
 
         # ----- Scroll + contenedor -----
         self.scroll = QScrollArea(self)
         self.scroll.setWidgetResizable(True)
-        self.scroll.setGeometry(100, 170, 700, 300)
+        self.scroll.setGeometry(90, 170, 700, 300)
         self.scroll.setFrameShape(QFrame.Shape.NoFrame)
         self.scroll.setStyleSheet("""
+        background: transparent;
         QScrollArea { background: transparent; }
         QScrollBar:vertical {
             background: transparent;
@@ -197,6 +211,7 @@ class View_Password(QWidget):
                 background: #FFFFFF;
                 border: 1px solid #E5E7EB;
                 border-radius: 10px;
+                           
             }
         """)
         shadow = QGraphicsDropShadowEffect()
@@ -215,21 +230,114 @@ class View_Password(QWidget):
         btn_del = QToolButton(card)
         btn_del.setText("Delete")
         btn_del.setToolTip("Eliminar esta contraseña")
-        
+        btn_del.setStyleSheet("""
+            QToolButton {
+                background: #EF4444;
+                color: white;
+                font-family: Helvetica;
+                font-size: 12px;
+                border: none;
+                border-radius: 6px;
+                padding: 4px 8px;
+            }
+            QToolButton:hover { background: #DC2626; }
+            QToolButton:pressed { background: #B91C1C; }
+        """)
         def _delete():
             if not self.user_id:
-                QMessageBox.warning(self, "Error", "No hay usuario en sesión."); return
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("No hay usuario en sesión.")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setStyleSheet(" Color: black; ")
+
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                return
+                
             if rec_id is None:
-                QMessageBox.warning(self, "Error", "No se encontró el identificador del registro."); return
-            resp = QMessageBox.question(
-                self, "Confirmar",
-                f"¿Eliminar la contraseña de '{sitio}' para '{usuario}'?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-            )
+                msg = QMessageBox(self)
+                msg.setWindowTitle("Error")
+                msg.setText("No se encontró el identificador del registro.")
+                msg.setStyleSheet(" Color: black; ")
+                msg.setIcon(QMessageBox.Icon.Warning)
+                msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg.exec()
+                return
+            
+            # Crear diálogo de confirmación personalizado
+            msg = QMessageBox(self)
+            msg.setWindowTitle("Confirmar eliminación")
+            msg.setText(f"¿Estás seguro de que quieres eliminar la contraseña de '{sitio}' para el usuario '{usuario}'?")
+            msg.setStyleSheet(" Color: black; ")
+            msg.setInformativeText("Esta acción no se puede deshacer.")
+            msg.setIcon(QMessageBox.Icon.Question)
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            msg.setDefaultButton(QMessageBox.StandardButton.No)
+            
+            # Personalizar los botones
+            yes_button = msg.button(QMessageBox.StandardButton.Yes)
+            yes_button.setText("Sí, eliminar")
+            yes_button.setStyleSheet("""
+                QPushButton {
+                    background: #EF4444;
+                    color: white;
+                    font-family: Helvetica;
+                    font-size: 14px;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    min-width: 100px;
+                }
+                QPushButton:hover { background: #DC2626; }
+                QPushButton:pressed { background: #B91C1C; }
+            """)
+            
+            no_button = msg.button(QMessageBox.StandardButton.No)
+            no_button.setText("Cancelar")
+            no_button.setStyleSheet("""
+                QPushButton {
+                    background: #6B7280;
+                    color: white;
+                    font-family: Helvetica;
+                    font-size: 14px;
+                    border: none;
+                    border-radius: 6px;
+                    padding: 8px 16px;
+                    min-width: 100px;
+                }
+                QPushButton:hover { background: #4B5563; }
+                QPushButton:pressed { background: #374151; }
+            """)
+            
+            resp = msg.exec()
             if resp == QMessageBox.StandardButton.Yes:
-                ok = delete_password(rec_id, self.user_id)
-                if ok: self.refresh()
-                else: QMessageBox.warning(self, "Error", "No se pudo eliminar el registro.")
+                try:
+                    ok = delete_password(rec_id, self.user_id)
+                    if ok:
+                        # Mostrar mensaje de éxito
+                        success_msg = QMessageBox(self)
+                        success_msg.setWindowTitle("Éxito")
+                        success_msg.setText(f"Contraseña de '{sitio}' eliminada correctamente.")
+                        success_msg.setStyleSheet(" Color: black; ")
+                        success_msg.setIcon(QMessageBox.Icon.Information)
+                        success_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        success_msg.exec()
+                        self.refresh()
+                    else:
+                        error_msg = QMessageBox(self)
+                        error_msg.setWindowTitle("Error")
+                        error_msg.setText("No se pudo eliminar el registro.")
+                        error_msg.setIcon(QMessageBox.Icon.Warning)
+                        error_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                        error_msg.exec()
+                except Exception as e:
+                    error_msg = QMessageBox(self)
+                    error_msg.setWindowTitle("Error")
+                    error_msg.setText(f"Error al eliminar: {str(e)}")
+                    error_msg.setIcon(QMessageBox.Icon.Critical)
+                    error_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
+                    error_msg.exec()
         
         btn_del.clicked.connect(_delete)
         lay.addWidget(btn_del)
@@ -347,9 +455,18 @@ class View_Password(QWidget):
 
     def _open_add_dialog(self):
         if not self.user_id:
-            QMessageBox.information(self, "Inicio de sesión requerido", "Inicia sesión para agregar contraseñas.")
+            open = QMessageBox(self)
+            open.setWindowTitle("Error")
+            open.setText("No hay usuario en sesión.")
+            open.setIcon(QMessageBox.Icon.Warning)
+            open.setStyleSheet(" Color: black; ")
+            open.setStandardButtons(QMessageBox.StandardButton.Ok)
+            open.exec()
             return
+        
         dlg = AddPasswordDialog(self)
+        dlg.setWindowTitle("Add Password")
+        dlg.setStyleSheet("background: #FEFEFE; Color: black;")
         if dlg.exec() == QDialog.DialogCode.Accepted:
             sitio, usuario, clave = dlg.get_data()
             if sitio and usuario and clave:
@@ -389,3 +506,4 @@ class AddPasswordDialog(QDialog):
 
     def get_data(self):
         return (self.input_site.text().strip(), self.input_user.text().strip(), self.input_pass.text().strip())
+
