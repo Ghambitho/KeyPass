@@ -1,0 +1,7 @@
+# KeyPass - Gestor de Contraseñas Seguro
+# Dependencias principales
+
+PyQt6>=6.4.0
+cryptography>=3.4.8
+keyring>=23.0.0
+python-dotenv>=0.19.0
