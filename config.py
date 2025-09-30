@@ -48,8 +48,5 @@ ASSETS_PATH = os.getenv('ASSETS_PATH', 'assets/')
 API_BASE_URL = os.getenv('API_BASE_URL', 'https://keypass-yk6b.onrender.com')
 API_TIMEOUT = int(os.getenv('API_TIMEOUT', '10'))
 
-# Performance Optimization
-USE_OPTIMIZED_MODULES = os.getenv('USE_OPTIMIZED_MODULES', 'true').lower() == 'true'
-CACHE_TTL_SECONDS = int(os.getenv('CACHE_TTL_SECONDS', '300'))  # 5 minutos
-DB_POOL_MIN_CONNECTIONS = int(os.getenv('DB_POOL_MIN_CONNECTIONS', '1'))
-DB_POOL_MAX_CONNECTIONS = int(os.getenv('DB_POOL_MAX_CONNECTIONS', '10'))
+# Performance Optimization (deshabilitado - usando versiones simples)
+USE_OPTIMIZED_MODULES = False
