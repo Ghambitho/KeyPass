@@ -16,7 +16,7 @@ from PyQt6.QtCore import Qt, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon
 
 from Logic.password_generator import generate_password
-from Logic.storage import save_password, get_password_for_site
+from Logic.storage import save_password
 from Main.PerfilWindow import Perfil_Window
 from Main.login_view import LoginView
 from Main.password import View_Password
