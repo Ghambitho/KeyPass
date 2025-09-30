@@ -18,7 +18,10 @@ def user_exists(email: str = "", usuario: str = "") -> bool:
 def create_user(email: str, usuario: str, password: str) -> int:
     """Crear nuevo usuario usando la API"""
     if _api_client.register(email, usuario, password):
-        return 1  # Retorna 1 si es exitoso (compatible con código existente)
+        # Después del registro exitoso, hacer login automático para obtener el user_id
+        if _api_client.login(email, password):
+            return _api_client.user_id or 1
+        return 1  # Fallback si no se puede obtener el user_id
     return 0  # Retorna 0 si falla
 
 def verify_user(login: str, password: str) -> bool:

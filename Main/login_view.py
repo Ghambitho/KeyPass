@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
 from Logic.login_api import verify_user, get_user_id
-from Logic.session import save_session
+from Logic.session_api import save_session
 
 class LoginView(QWidget):
     authenticated = pyqtSignal(int)

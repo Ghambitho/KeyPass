@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
-from Logic.session import load_session, clear_session
+from Logic.session_api import load_session, clear_session
 from Logic.login_api import get_user_profile
 from Logic.storage_api import _load_all_passwords
 import csv

@@ -21,7 +21,7 @@ from Main.PerfilWindow import Perfil_Window
 from Main.login_view import LoginView
 from Main.password import View_Password
 from Main.signup_view import SignupView   # <-- vista de registro
-from Logic.session import has_session, load_session, clear_session
+from Logic.session_api import has_session, load_session, clear_session
 from Logic.login_api import get_user_profile
 # from Logic.database_init import init_database  # Ya no necesario con API
 import config

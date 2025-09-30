@@ -37,7 +37,7 @@ class KeyPassAPIClient:
                 headers=self._get_headers(),
                 timeout=self.timeout
             )
-            return response.status_code == 201
+            return response.status_code == 200
         except Exception:
             return False
     
