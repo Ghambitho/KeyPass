@@ -1,30 +1,41 @@
 # -*- coding: utf-8 -*-
-from pathlib import Path
 from Logic.encryption import get_encryption_key
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import config
 
-BASE = Path(__file__).resolve().parent.parent
-DB_DIR = BASE / config.DB_PATH
-DB_DIR.mkdir(exist_ok=True)
-DB_FILE = DB_DIR / config.DB_NAME
+def _conn():
+    """Conexión a PostgreSQL"""
+    return psycopg2.connect(
+        host=config.DB_HOST,
+        database=config.DB_NAME,
+        user=config.DB_USER,
+        password=config.DB_PASSWORD,
+        port=config.DB_PORT,
+        sslmode='require'
+    )
 
 
 def _load_all_passwords(user_id):
-    conn = sqlite3.connect(DB_FILE)
+    conn = _conn()
     try:
-        cur = conn.cursor()
-        cur.execute("SELECT id, site, User, pass FROM KEYPASS WHERE user_id=? ORDER BY id DESC;", (user_id,))
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("SELECT id, site, user_name, pass FROM keypass WHERE user_id=%s ORDER BY id DESC", (user_id,))
         rows = cur.fetchall()
 
         f = get_encryption_key()
         salida = []
-        for rec_id, sitio, usuario, enc in rows:
+        for row in rows:
             try:
-                pwd = f.decrypt(enc).decode('utf-8')
+                pwd = f.decrypt(row['pass']).decode('utf-8')
             except Exception:
                 pwd = "<decryption-error>"
-            salida.append({"id": rec_id, "sitio": sitio, "usuario": usuario, "contraseña": pwd})
+            salida.append({
+                "id": row['id'], 
+                "sitio": row['site'], 
+                "usuario": row['user_name'], 
+                "contraseña": pwd
+            })
         return salida
     except Exception:
         return []
@@ -32,13 +43,12 @@ def _load_all_passwords(user_id):
         conn.close()
 
 def delete_password(record_id, user_id):
-    conn = sqlite3.connect(DB_FILE)
+    conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute("DELETE FROM KEYPASS WHERE id=? AND user_id=?;", (record_id, user_id))
+        cur.execute("DELETE FROM keypass WHERE id=%s AND user_id=%s", (record_id, user_id))
         conn.commit()
-        ok = cur.rowcount > 0
-        return ok
+        return cur.rowcount > 0
     except Exception:
         return False
     finally:
@@ -49,10 +59,10 @@ def save_password(sitio, usuario, contraseña, user_id):
         f = get_encryption_key()
         enc = f.encrypt(contraseña.encode('utf-8'))
 
-        conn = sqlite3.connect(DB_FILE)
+        conn = _conn()
         try:
             cur = conn.cursor()
-            cur.execute("INSERT INTO KEYPASS(site, User, pass, user_id) VALUES (?,?,?,?)", (sitio, usuario, enc, user_id))
+            cur.execute("INSERT INTO keypass(site, user_name, pass, user_id) VALUES (%s,%s,%s,%s)", (sitio, usuario, enc, user_id))
             conn.commit()
             return True
         except Exception:

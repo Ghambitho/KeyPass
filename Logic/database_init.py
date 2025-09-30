@@ -1,32 +1,37 @@
-import sqlite3
-from pathlib import Path
+import psycopg2
+from psycopg2.extras import RealDictCursor
 import config
 
-BASE = Path(__file__).resolve().parent.parent
-DB_DIR = BASE / config.DB_PATH
-DB_FILE = DB_DIR / config.DB_NAME
-
 def init_database():
+    """Inicializar base de datos PostgreSQL"""
     try:
-        DB_DIR.mkdir(exist_ok=True)
-        conn = sqlite3.connect(DB_FILE)
+        conn = psycopg2.connect(
+            host=config.DB_HOST,
+            database=config.DB_NAME,
+            user=config.DB_USER,
+            password=config.DB_PASSWORD,
+            port=config.DB_PORT,
+            sslmode='require'
+        )
         cur = conn.cursor()
-        cur.execute("PRAGMA foreign_keys = ON;")
+        
+        # Crear tabla de usuarios
         cur.execute("""
             CREATE TABLE IF NOT EXISTS login (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email TEXT UNIQUE NOT NULL,
-                usuario TEXT UNIQUE NOT NULL,
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                usuario VARCHAR(255) UNIQUE NOT NULL,
                 pass TEXT NOT NULL
             )
         """)
         
+        # Crear tabla de contraseñas
         cur.execute("""
-            CREATE TABLE IF NOT EXISTS KEYPASS (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site TEXT NOT NULL,
-                User TEXT NOT NULL,
-                pass BLOB NOT NULL,
+            CREATE TABLE IF NOT EXISTS keypass (
+                id SERIAL PRIMARY KEY,
+                site VARCHAR(255) NOT NULL,
+                user_name VARCHAR(255) NOT NULL,
+                pass BYTEA NOT NULL,
                 user_id INTEGER NOT NULL,
                 FOREIGN KEY (user_id) REFERENCES login(id)
             )
@@ -34,9 +39,9 @@ def init_database():
         
         conn.commit()
         conn.close()
-        
         return True
         
-    except Exception:
+    except Exception as e:
+        print(f"Error connecting to database: {e}")
         return False
 

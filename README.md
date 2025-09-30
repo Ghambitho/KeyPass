@@ -1,247 +1,179 @@
-# 🔐 KeyPass - Gestor de Contraseñas Seguro
+# KeyPass API - Gestor de Contraseñas
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
-![PyQt6](https://img.shields.io/badge/PyQt6-6.0+-green.svg)
-![SQLite](https://img.shields.io/badge/SQLite-3+-orange.svg)
-![License](https://img.shields.io/badge/License-MIT-yellow.svg)
+## Descripción
 
-## 📋 Descripción
+KeyPass es un gestor de contraseñas seguro que permite almacenar y gestionar contraseñas de forma cifrada. Esta versión incluye una API REST para acceso remoto desde cualquier dispositivo.
 
-KeyPass es una aplicación de escritorio desarrollada en Python que permite a los usuarios generar, almacenar y gestionar contraseñas de forma segura. La aplicación utiliza cifrado avanzado para proteger los datos sensibles y ofrece una interfaz gráfica moderna y fácil de usar.
-
-## ✨ Características Principales
-
-- 🔐 **Generación de contraseñas seguras** con opciones personalizables
-- 🛡️ **Cifrado avanzado** usando Fernet (AES 128)
-- 👤 **Sistema de autenticación** con hash PBKDF2
-- 💾 **Almacenamiento local** con SQLite
-- 🎨 **Interfaz moderna** con PyQt6
-- 📱 **Gestión de sesiones** persistentes
-- 🔍 **Búsqueda y filtrado** de contraseñas
-- 📤 **Exportación** a CSV
-- 🗑️ **Eliminación segura** de registros
-
-## 🚀 Instalación
-
-### Requisitos Previos
-
-- Python 3.8 o superior
-- pip (gestor de paquetes de Python)
-
-### Instalación de Dependencias
-
-```bash
-# Clonar el repositorio
-git clone https://github.com/Ghambitho/KeyPass
-cd KeyPass
-
-# Instalar dependencias
-pip install -r requirements.txt
-```
-
-### Dependencias
-
-```
-PyQt6>=6.0.0
-cryptography>=41.0.0
-pyperclip>=1.8.0
-keyring>=24.0.0
-```
-
-## 🎯 Uso
-
-### Ejecución Normal
-
-```bash
-python Main/app.py
-```
-
-### Desarrollo con Auto-reload
-
-```bash
-# Instalar watchdog para desarrollo
-pip install watchdog
-
-# Ejecutar con auto-reload
-watchmedo auto-restart --pattern="*.py" --recursive -- python Main/app.py
-```
-
-## 🏗️ Arquitectura del Proyecto
+##  Estructura del Proyecto
 
 ```
 KeyPass/
-├── Main/                    # Interfaz de usuario (PyQt6)
-│   ├── app.py              # Aplicación principal
-│   ├── login_view.py       # Vista de inicio de sesión
-│   ├── signup_view.py      # Vista de registro
-│   ├── password.py         # Vista de gestión de contraseñas
-│   └── PerfilWindow.py     # Vista de perfil de usuario
-├── Logic/                  # Lógica de negocio
-│   ├── encryption.py       # Módulo de cifrado
-│   ├── login.py           # Autenticación de usuarios
-│   ├── password_generator.py # Generación de contraseñas
-│   ├── session.py         # Gestión de sesiones
-│   └── storage.py         # Almacenamiento de datos
-├── db/                     # Base de datos y archivos de sesión
-│   ├── keypass.db         # Base de datos SQLite
-│   ├── session.bin        # Archivo de sesión cifrado
-│   └── session.key        # Clave de cifrado de sesión
-├── assets/                 # Recursos gráficos
-│   ├── apple.png          # Icono de Apple
-│   ├── google.png         # Icono de Google
-│   ├── copy-pass.png      # Icono de copiar
-│   ├── copy-savepass.png  # Icono de copiar guardado
-│   ├── eye-closed.png     # Icono de ojo cerrado
-│   ├── eye-open.png       # Icono de ojo abierto
-│   └── lupa.png           # Icono de búsqueda
-├── requirements.txt        # Dependencias del proyecto
-└── README.md              # Este archivo
+├── api.py                 #  API FastAPI principal
+├── Logic/                 #  Lógica de negocio
+│   ├── __init__.py
+│   ├── database_init.py   #  PostgreSQL
+│   ├── encryption.py      #  Cifrado AES-CBC + HMAC
+│   ├── login.py          #  Autenticación
+│   ├── session.py        #  Gestión de sesiones
+│   ├── storage.py        #  Almacenamiento PostgreSQL
+│   └── password_generator.py #  Generador de contraseñas
+├── Main/                  #  Interfaz PyQt6 (para .exe)
+│   ├── app.py
+│   ├── login_view.py
+│   ├── password.py
+│   ├── PerfilWindow.py
+│   └── signup_view.py
+├── assets/                #  Recursos gráficos (para .exe)
+├── config.py             #  Configuración
+├── requirements.txt      #  Dependencias
+├── Procfile             #  Configuración Render
+└── env.example          #  Variables de entorno
 ```
 
-## 🔧 Funcionalidades Detalladas
+##  Tecnologías
 
-### 1. Sistema de Autenticación
+- **Backend**: FastAPI, PostgreSQL, JWT
+- **Cifrado**: AES-CBC + HMAC, PBKDF2-SHA256
+- **Frontend**: PyQt6 (para aplicación de escritorio)
+- **Base de datos**: PostgreSQL (Supabase)
+- **Deploy**: Render
 
-- **Registro de usuarios** con validación de email
-- **Inicio de sesión** con email o nombre de usuario
-- **Hash seguro** de contraseñas usando PBKDF2
-- **Migración automática** de algoritmos antiguos
-- **Gestión de sesiones** persistentes
+##  Configuración
 
-### 2. Generador de Contraseñas
+### 1. Variables de Entorno
 
-- **Longitud configurable** (6-32 caracteres)
-- **Opciones personalizables:**
-  - Letras mayúsculas
-  - Números
-  - Símbolos especiales
-- **Generación instantánea**
-- **Copia al portapapeles**
+Copia `env.example` y configura las variables:
 
-### 3. Gestión de Contraseñas
+```bash
+# Base de datos PostgreSQL (Supabase)
+DB_HOST=your-project.supabase.co
+DB_NAME=postgres
+DB_USER=postgres
+DB_PASSWORD=your-supabase-password
+DB_PORT=5432
 
-- **Almacenamiento cifrado** con Fernet
-- **Búsqueda y filtrado** en tiempo real
-- **Visualización segura** (mostrar/ocultar)
-- **Copia rápida** al portapapeles
-- **Eliminación** con confirmación
-- **Exportación** a formato CSV
+# JWT Secret (¡CAMBIA ESTO!)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
 
-### 4. Perfil de Usuario
+# Entorno
+ENV=production
+DEBUG=false
+```
 
-- **Edición de datos** personales
-- **Cambio de contraseña** seguro
-- **Exportación** de todas las contraseñas
-- **Configuración** de notificaciones
+### 2. Instalación Local
 
-## 🔒 Seguridad
+```bash
+# Instalar dependencias
+pip install -r requirements.txt
 
-### Cifrado de Datos
+# Ejecutar API
+python api.py
+```
 
-- **Fernet (AES 128)** para cifrado de contraseñas
-- **Claves únicas** por instalación
-- **Almacenamiento seguro** de claves
+### 3. Deploy en Render
+
+1. **Crear repositorio** en GitHub
+2. **Conectar** con Render
+3. **Configurar variables** de entorno
+4. **Deploy automático**
+
+## 📡 API Endpoints
 
 ### Autenticación
+- `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/register` - Registrar usuario
 
-- **PBKDF2** con 200,000 iteraciones
-- **Salt aleatorio** de 16 bytes
-- **Comparación segura** con HMAC
-- **Migración automática** de algoritmos antiguos
+### Contraseñas
+- `GET /api/passwords` - Obtener contraseñas
+- `POST /api/passwords` - Guardar contraseña
+- `DELETE /api/passwords/{id}` - Eliminar contraseña
 
-### Gestión de Sesiones
+### Utilidades
+- `POST /api/generate-password` - Generar contraseña
+- `GET /api/user/profile` - Obtener perfil
 
-- **Tokens cifrados** con TTL configurable
-- **Almacenamiento local** seguro
-- **Expiración automática** de sesiones
+### Sistema
+- `GET /` - Información de la API
+- `GET /health` - Health check
 
-## 🗄️ Base de Datos
+##  Seguridad
 
-### Esquema de Tablas
+- **Cifrado**: AES-CBC + HMAC para contraseñas
+- **Autenticación**: JWT con expiración
+- **Hash**: PBKDF2-SHA256 para contraseñas de usuario
+- **Conexión**: SSL/TLS obligatorio
+- **Validación**: Sanitización de inputs
 
-#### Tabla `login`
+##  Aplicación de Escritorio
+
+Para compilar el .exe:
+
+```bash
+# Instalar PyInstaller
+pip install pyinstaller
+
+# Compilar
+pyinstaller --onefile --windowed Main/app.py
+```
+
+##  Base de Datos
+
+### Tabla `login`
 ```sql
 CREATE TABLE login (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT UNIQUE NOT NULL,
-    usuario TEXT UNIQUE NOT NULL,
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    usuario VARCHAR(255) UNIQUE NOT NULL,
     pass TEXT NOT NULL
 );
 ```
 
-#### Tabla `KEYPASS`
+### Tabla `keypass`
 ```sql
-CREATE TABLE KEYPASS (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    site TEXT NOT NULL,
-    User TEXT NOT NULL,
-    pass BLOB NOT NULL,
+CREATE TABLE keypass (
+    id SERIAL PRIMARY KEY,
+    site VARCHAR(255) NOT NULL,
+    user_name VARCHAR(255) NOT NULL,
+    pass BYTEA NOT NULL,
     user_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES login(id)
 );
 ```
 
-## 🛠️ Desarrollo
+##  Uso
 
-### Estructura de Código
+### Desde la API
+```python
+import requests
 
-- **Separación de responsabilidades** (UI/Logic)
-- **Módulos independientes** para cada funcionalidad
-- **Manejo de errores** robusto
-- **Código documentado** con comentarios
+# Login
+response = requests.post("https://your-api.render.com/api/auth/login", 
+                        json={"email": "user@example.com", "password": "password"})
+token = response.json()["token"]
 
-### Patrones Utilizados
+# Obtener contraseñas
+headers = {"Authorization": f"Bearer {token}"}
+passwords = requests.get("https://your-api.render.com/api/passwords", headers=headers)
+```
 
-- **MVC (Model-View-Controller)**
-- **Observer Pattern** (PyQt6 Signals/Slots)
-- **Factory Pattern** (generación de widgets)
+### Desde el .exe
+El ejecutable se conecta automáticamente a la API usando las credenciales configuradas.
 
-## 🧪 Testing
+##  Notas
 
-### Pruebas Manuales
+- **Producción**: Cambiar `JWT_SECRET` por una clave segura
+- **CORS**: Configurar orígenes específicos en producción
+- **Logs**: Monitorear logs de Render para debugging
+- **Backup**: Configurar backup automático de Supabase
 
-1. **Registro de usuario** nuevo
-2. **Inicio de sesión** con credenciales válidas
-3. **Generación** de contraseñas
-4. **Almacenamiento** y recuperación
-5. **Búsqueda** y filtrado
-6. **Exportación** de datos
+##  Migración
 
-### Casos de Prueba
+Si tienes datos en SQLite local, necesitarás migrarlos a PostgreSQL:
 
-- ✅ Autenticación exitosa
-- ✅ Generación de contraseñas
-- ✅ Cifrado/descifrado
-- ✅ Gestión de sesiones
-- ✅ Exportación de datos
+1. Exportar datos de SQLite
+2. Importar a PostgreSQL
+3. Verificar cifrado
 
+##  Soporte
 
-## 📝 Changelog
-
-### Versión 1.0.0
-- ✅ Sistema de autenticación completo
-- ✅ Generador de contraseñas
-- ✅ Gestión de contraseñas cifradas
-- ✅ Interfaz gráfica moderna
-- ✅ Exportación a CSV
-- ✅ Gestión de sesiones
-
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 👨‍💻 Autor
-
-**Tu Nombre**
-- GitHub: [Ghambitho](https://github.com/Ghambitho)
-- Email: Bel4ndria.d.jhon@gmail.com
-
-
-- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) - Framework de interfaz gráfica
-- [Cryptography](https://cryptography.io/) - Biblioteca de cifrado
-- [SQLite](https://www.sqlite.org/) - Base de datos embebida
-
----
-
-**¡Gracias por usar KeyPass! 🔐**
+Para problemas o preguntas, revisar los logs de Render o contactar al desarrollador.

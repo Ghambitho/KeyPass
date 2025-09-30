@@ -9,9 +9,9 @@ import os
 import base64
 
 BASE = Path(__file__).resolve().parent.parent
-DB = BASE / config.DB_PATH
-DB.mkdir(exist_ok=True)
-SESSION_FILE = DB / config.SESSION_FILE
+# Para Render: usar directorio temporal en lugar de carpeta db local
+import tempfile
+SESSION_FILE = Path(tempfile.gettempdir()) / config.SESSION_FILE
 
 def _get_or_create_key() -> bytes:
     """Obtiene la clave de sesión desde el keyring del sistema"""
