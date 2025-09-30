@@ -43,3 +43,7 @@ DEFAULT_PASSWORD_LENGTH = int(os.getenv('DEFAULT_PASSWORD_LENGTH', '14'))
 # Archivos
 ASSETS_PATH = os.getenv('ASSETS_PATH', 'assets/')
 # DB_PATH removido - usando solo Supabase para Render
+
+# API Configuration
+API_BASE_URL = os.getenv('API_BASE_URL', 'https://keypass-yk6b.onrender.com')
+API_TIMEOUT = int(os.getenv('API_TIMEOUT', '10'))

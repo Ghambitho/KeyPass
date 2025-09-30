@@ -16,14 +16,14 @@ from PyQt6.QtCore import Qt, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon
 
 from Logic.password_generator import generate_password
-from Logic.storage import save_password
+from Logic.storage_api import save_password
 from Main.PerfilWindow import Perfil_Window
 from Main.login_view import LoginView
 from Main.password import View_Password
 from Main.signup_view import SignupView   # <-- vista de registro
 from Logic.session import has_session, load_session, clear_session
-from Logic.login import get_user_profile
-from Logic.database_init import init_database
+from Logic.login_api import get_user_profile
+# from Logic.database_init import init_database  # Ya no necesario con API
 import config
 
 
@@ -45,7 +45,7 @@ class Ventana(QWidget):
         self.current_user_id = None
         
         # Inicializar base de datos
-        init_database()
+        # init_database()  # Ya no necesario con API
 
         # --- Layout principal + Stack ---
         self.layout = QVBoxLayout(self)

@@ -17,7 +17,7 @@ from PyQt6.QtGui import QIcon, QColor
 
 # Importa del almacenamiento cifrado
 # Nota: _load_all_passwords es "interno", pero lo usamos para listar en el visor.
-from Logic.storage import _load_all_passwords, delete_password, save_password
+from Logic.storage_api import _load_all_passwords, delete_password, save_password
 
 
 class View_Password(QWidget):

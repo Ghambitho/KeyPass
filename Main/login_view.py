@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
-from Logic.login import verify_user, get_user_id
+from Logic.login_api import verify_user, get_user_id
 from Logic.session import save_session
 
 class LoginView(QWidget):
