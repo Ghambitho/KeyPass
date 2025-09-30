@@ -29,8 +29,12 @@ def verify_user(login: str, password: str) -> bool:
     return _api_client.login(login, password)
 
 def get_user_profile(user_id: int) -> tuple | None:
-    """Obtener perfil del usuario (no disponible en API actual)"""
-    # La API actual no expone esta funcionalidad
+    """Obtener perfil del usuario desde la sesión actual"""
+    if _api_client.is_logged_in() and _api_client.user_id == user_id:
+        # Obtener información del usuario desde la sesión actual
+        username = _api_client.user_username or "Usuario"
+        email = _api_client.user_email or "usuario@ejemplo.com"
+        return (username, email)
     return None
 
 def update_user_profile(user_id: int, new_email: str, new_usuario: str) -> bool:

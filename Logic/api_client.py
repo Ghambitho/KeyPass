@@ -16,6 +16,8 @@ class KeyPassAPIClient:
         self.timeout = config.API_TIMEOUT
         self.token: Optional[str] = None
         self.user_id: Optional[int] = None
+        self.user_email: Optional[str] = None
+        self.user_username: Optional[str] = None
     
     def _get_headers(self) -> Dict[str, str]:
         """Obtiene los headers para las peticiones"""
@@ -37,7 +39,12 @@ class KeyPassAPIClient:
                 headers=self._get_headers(),
                 timeout=self.timeout
             )
-            return response.status_code == 200
+            if response.status_code == 200:
+                # Almacenar información del usuario para el registro
+                self.user_email = email
+                self.user_username = usuario
+                return True
+            return False
         except Exception:
             return False
     
@@ -59,6 +66,8 @@ class KeyPassAPIClient:
                 if data.get("success"):
                     self.token = data.get("token")
                     self.user_id = data.get("user_id")
+                    # Almacenar información del usuario para el login
+                    self.user_email = login  # El login es el email
                     return True
             return False
         except Exception:
@@ -129,6 +138,8 @@ class KeyPassAPIClient:
         """Cerrar sesión"""
         self.token = None
         self.user_id = None
+        self.user_email = None
+        self.user_username = None
     
     def is_logged_in(self) -> bool:
         """Verificar si hay sesión activa"""
