@@ -12,7 +12,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
-from Logic.session_api import load_session, clear_session
+from Logic.session import load_session, clear_session
 from Logic.login import get_user_profile
 from Logic.storage import _load_all_passwords
 import csv
@@ -224,9 +224,9 @@ class Perfil_Window(QWidget):
     def showEvent(self, event):
         """Se ejecuta cuando se muestra la ventana"""
         super().showEvent(event)
-        if self.user_id is None:
-            self._load_user_data_from_session()
-            self._update_display()
+        # Siempre recargar los datos de la sesión para mostrar el usuario actual
+        self._load_user_data_from_session()
+        self._update_display()
         
     def _load_user_data_from_session(self):
         """Carga los datos desde la sesión"""

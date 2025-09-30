@@ -79,7 +79,7 @@ def get_encryption_key():
         else:
             key = os.urandom(32)
             keyring.set_password(service_name, username, base64.b64encode(key).decode('utf-8'))
-            print("✅ AES encryption key created and saved to system keyring")
+            print("AES encryption key created and saved to system keyring")
             
     except Exception as e:
         raise Exception(f"Failed to access system keyring: {e}. Please ensure keyring is properly configured.")

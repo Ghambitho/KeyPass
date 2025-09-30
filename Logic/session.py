@@ -26,7 +26,7 @@ def _get_or_create_key() -> bytes:
         else:
             key = os.urandom(32)
             keyring.set_password(service_name, username, base64.b64encode(key).decode('utf-8'))
-            print("✅ AES session key created and saved to system keyring")
+            print("AES session key created and saved to system keyring")
             
     except Exception as e:
         raise Exception(f"Failed to access system keyring for sessions: {e}. Please ensure keyring is properly configured.")

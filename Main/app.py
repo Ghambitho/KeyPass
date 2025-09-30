@@ -17,11 +17,20 @@ from PyQt6.QtGui import QColor, QIcon
 
 from Logic.password_generator import generate_password
 from Logic.storage import save_password
+import config
+
+# Inicializar pool de conexiones si se usan módulos optimizados
+if config.USE_OPTIMIZED_MODULES:
+    try:
+        from Logic.db_pool import db_pool
+        db_pool.get_pool()  # Inicializar el pool
+    except ImportError:
+        pass
 from Main.PerfilWindow import Perfil_Window
 from Main.login_view import LoginView
 from Main.password import View_Password
 from Main.signup_view import SignupView   # <-- vista de registro
-from Logic.session_api import has_session, load_session, clear_session
+from Logic.session import has_session, load_session, clear_session
 from Logic.login import get_user_profile
 from Logic.database_init import init_database
 import config

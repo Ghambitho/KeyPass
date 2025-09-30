@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
 from Logic.login import verify_user, get_user_id
-from Logic.session_api import save_session
+from Logic.session import save_session
 
 class LoginView(QWidget):
     authenticated = pyqtSignal(int)
@@ -211,9 +211,9 @@ class LoginView(QWidget):
             
         ok = verify_user(login, pw)
         if ok:
-            # Obtener id y guardar sesión si se pidió
+            # Obtener id y guardar sesión
             uid = get_user_id(login)
-            if uid is not None and self.remember.isChecked():
+            if uid is not None:
                 try:
                     save_session(uid, ttl_days=30)
                 except Exception:

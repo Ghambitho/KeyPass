@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
 from Logic.login import create_user, user_exists
-from Logic.session_api import save_session
+from Logic.session import save_session
 import config
 
 class SignupView(QWidget):

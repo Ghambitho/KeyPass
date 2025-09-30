@@ -27,8 +27,13 @@ def _load_all_passwords(user_id):
         salida = []
         for row in rows:
             try:
-                pwd = f.decrypt(row['pass']).decode('utf-8')
-            except Exception:
+                # Convertir memoryview a bytes si es necesario
+                pass_data = row['pass']
+                if isinstance(pass_data, memoryview):
+                    pass_data = bytes(pass_data)
+                pwd = f.decrypt(pass_data).decode('utf-8')
+            except Exception as e:
+                print(f"Decryption error for row {row['id']}: {e}")
                 pwd = "<decryption-error>"
             salida.append({
                 "id": row['id'], 
