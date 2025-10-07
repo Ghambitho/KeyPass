@@ -6,6 +6,8 @@ KeyPass es un gestor de contraseñas seguro que permite almacenar y gestionar co
 
 ##  Estructura del Proyecto
 
+python -m client.UI.app
+
 ```
 KeyPass/
 ├── api.py                 #  API FastAPI principal
