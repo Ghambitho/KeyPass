@@ -10,7 +10,7 @@ try:
 except ImportError:
     try:
         # Fallback: importar desde api/ (estructura original)
-        from api.api import app
+        from backend.api import app
     except ImportError:
         # Último recurso: crear una app mínima
         from fastapi import FastAPI
