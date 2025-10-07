@@ -9,15 +9,21 @@ import api.config as config
 def init_database():
     """Inicializa las tablas de la base de datos"""
     try:
-        # Conectar a la base de datos
-        conn = psycopg2.connect(
-            host=config.DB_HOST,
-            database=config.DB_NAME,
-            user=config.DB_USER,
-            password=config.DB_PASSWORD,
-            port=config.DB_PORT,
-            sslmode='require'
-        )
+        # Conectar a la base de datos usando configuración flexible
+        if config.DATABASE_URL:
+            conn = psycopg2.connect(
+                config.DATABASE_URL,
+                sslmode='require'
+            )
+        else:
+            conn = psycopg2.connect(
+                host=config.DB_HOST,
+                database=config.DB_NAME,
+                user=config.DB_USER,
+                password=config.DB_PASSWORD,
+                port=config.DB_PORT,
+                sslmode='require'
+            )
         
         cur = conn.cursor()
         

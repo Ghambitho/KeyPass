@@ -2,9 +2,9 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-# API Backend
-API_BASE_URL = os.getenv("API_BASE_URL", "https://keypass-yk6b.onrender.com")
-API_TIMEOUT = int(os.getenv("API_TIMEOUT", "10"))
+# API Backend - Actualizar con tu URL de Render
+API_BASE_URL = os.getenv("API_BASE_URL", "https://tu-keypass-api.onrender.com")
+API_TIMEOUT = int(os.getenv("API_TIMEOUT", "30"))  # Aumentado para conexiones remotas
 
 # UI
 WINDOW_WIDTH = int(os.getenv('WINDOW_WIDTH', '900'))

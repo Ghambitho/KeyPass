@@ -13,15 +13,22 @@ logger = logging.getLogger(__name__)
 ENV = os.getenv('ENV', 'development')
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-# Base de datos PostgreSQL
+# Base de datos PostgreSQL - Configuración para Supabase
+# Para Supabase, el formato de conexión es:
+# postgresql://postgres.[PROJECT_REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:5432/postgres
 DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_NAME = os.getenv("DB_NAME", "keypass")
+DB_NAME = os.getenv("DB_NAME", "postgres")  # Supabase usa 'postgres' por defecto
 DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "postgres")
+DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_PORT = int(os.getenv("DB_PORT", "5432"))
 
-if not os.getenv("DB_HOST"):
-    logger.warning("DB_HOST no está configurado. Usando valores de desarrollo por defecto.")
+# URL completa de conexión (útil para Supabase)
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+
+if not DATABASE_URL and not DB_HOST:
+    logger.warning("Ni DATABASE_URL ni DB_HOST están configurados. Usando valores de desarrollo por defecto.")
+elif DATABASE_URL:
+    logger.info("Usando DATABASE_URL para conexión a Supabase")
 
 
 # JWT

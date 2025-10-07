@@ -12,15 +12,23 @@ DEFAULT_ITER = config.DEFAULT_ITERATIONS
 SALT_BYTES = config.SALT_BYTES
 
 def _conn():
-    """Conexión a PostgreSQL"""
-    return psycopg2.connect(
-        host=config.DB_HOST,
-        database=config.DB_NAME,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD,
-        port=config.DB_PORT,
-        sslmode='require'
-    )
+    """Conexión a PostgreSQL (compatible con Supabase)"""
+    # Si existe DATABASE_URL (formato Supabase), usarlo
+    if config.DATABASE_URL:
+        return psycopg2.connect(
+            config.DATABASE_URL,
+            sslmode='require'
+        )
+    else:
+        # Usar variables individuales
+        return psycopg2.connect(
+            host=config.DB_HOST,
+            database=config.DB_NAME,
+            user=config.DB_USER,
+            password=config.DB_PASSWORD,
+            port=config.DB_PORT,
+            sslmode='require'
+        )
 def _pbkdf2(password: str, salt: bytes, iterations: int = DEFAULT_ITER) -> bytes:
     return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
 
