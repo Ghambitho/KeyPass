@@ -4,7 +4,7 @@ Script de inicialización de base de datos para KeyPass
 Crea las tablas necesarias en PostgreSQL
 """
 import psycopg2
-import api.config as config
+import backend.config as config
 
 def init_database():
     """Inicializa las tablas de la base de datos"""

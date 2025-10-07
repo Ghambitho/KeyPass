@@ -7,8 +7,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
 from client.Logic.session import load_session, clear_session
-from api.Logic.login import get_user_profile
-from api.Logic.storage import _load_all_passwords
+from backend.Logic.login import get_user_profile
+from backend.Logic.storage import _load_all_passwords
 import csv
 from datetime import datetime
 

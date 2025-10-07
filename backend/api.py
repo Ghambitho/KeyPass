@@ -17,12 +17,12 @@ from jose.exceptions import ExpiredSignatureError, JWTError
 from pydantic import BaseModel 
 
 # Importar lógica de KeyPass
-from api.Logic.login import verify_user, get_user_id, create_user, user_exists, get_user_profile
-from api.Logic.storage import _load_all_passwords, save_password, delete_password
-from api.Logic.database_init import init_database
+from backend.Logic.login import verify_user, get_user_id, create_user, user_exists, get_user_profile
+from backend.Logic.storage import _load_all_passwords, save_password, delete_password
+from backend.Logic.database_init import init_database
 from client.Logic.encryption import get_encryption_key
 from client.Logic.password_generator import generate_password
-import api.config as config
+import backend.config as config
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)

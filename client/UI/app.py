@@ -8,13 +8,13 @@ from PyQt6.QtCore import Qt, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon
 
 from client.Logic.password_generator import generate_password
-from api.Logic.storage import save_password
+from backend.Logic.storage import save_password
 from client.UI.PerfilWindow import Perfil_Window
 from client.UI.login_view import LoginView
 from client.UI.password import View_Password
 from client.UI.signup_view import SignupView   # <-- vista de registro
 from client.Logic.session import has_session, load_session, clear_session
-from api.Logic.login import get_user_profile
+from backend.Logic.login import get_user_profile
 import client.config as config
 
 

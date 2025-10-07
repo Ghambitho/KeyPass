@@ -2,7 +2,7 @@
 from client.Logic.encryption import get_encryption_key
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import api.config as config
+import backend.config as config
 
 def _conn():
     """Conexión a PostgreSQL (compatible con Supabase)"""

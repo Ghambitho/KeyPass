@@ -5,7 +5,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import hashlib
 from typing import Optional, Tuple
-import api.config as config
+import backend.config as config
 
 ALGO = config.ENCRYPTION_ALGORITHM
 DEFAULT_ITER = config.DEFAULT_ITERATIONS
