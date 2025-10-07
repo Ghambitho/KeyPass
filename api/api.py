@@ -49,7 +49,7 @@ app.add_middleware(
 # Configuración JWT
 SECRET_KEY = config.JWT_SECRET
 ALGORITHM = config.JWT_ALG
-ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("JWT_EXP_HOURS", "12"))
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXP_MIN", "15"))
 
 security = HTTPBearer()
 
@@ -57,7 +57,7 @@ def create_token(user_id: int) -> str:
     """Crear token JWT para el usuario"""
     payload = {
         "user_id": user_id,
-        "exp": datetime.utcnow() + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS),
+        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
         "iat": datetime.utcnow()
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
@@ -159,7 +159,7 @@ async def api_login(req: LoginReq):
                 "success": True,
                 "token": token,
                 "user_id": user_id,
-                "expires_in": ACCESS_TOKEN_EXPIRE_HOURS * 3600
+                "expires_in": ACCESS_TOKEN_EXPIRE_MINUTES * 60
             }
         raise HTTPException(
             status_code=401,

@@ -10,11 +10,17 @@ load_dotenv()
 ENV = os.getenv('ENV', 'development')
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-#Supabase
-SUPABASE_URL = os.getenv("SUPABASE_URL") or "" 
-SUPABASE_KEY = os.getenv("SUPABASE_KEY") or ""
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("Faltan SUPABASE_URL y/o SUPABASE_KEY")
+# Base de datos PostgreSQL
+DB_HOST = os.getenv("DB_HOST")
+DB_NAME = os.getenv("DB_NAME")
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+
+# Validar variables de base de datos
+if not all([DB_HOST, DB_NAME, DB_USER, DB_PASSWORD]):
+    raise RuntimeError("Faltan variables de base de datos: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD")
+
 
 # JWT
 JWT_SECRET = os.getenv("JWT_SECRET") or ""
