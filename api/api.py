@@ -3,7 +3,7 @@
 KeyPass API - Servidor FastAPI para Render
 API intermedia para conectar el .exe con la base de datos PostgreSQL
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import os
 import logging
 from typing import Optional
@@ -68,8 +68,8 @@ def create_token(user_id: int) -> str:
     """Crear token JWT para el usuario"""
     payload = {
         "user_id": user_id,
-        "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
-        "iat": datetime.utcnow()
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        "iat": datetime.now(timezone.utc)
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -122,9 +122,9 @@ class GeneratePasswordReq(BaseModel):
 # Middleware para logging de requests
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    start_time = datetime.utcnow()
+    start_time = datetime.now(timezone.utc)
     response = await call_next(request)
-    process_time = (datetime.utcnow() - start_time).total_seconds()
+    process_time = (datetime.now(timezone.utc) - start_time).total_seconds()
     
     logger.info(
         f"{request.method} {request.url.path} - "
@@ -142,13 +142,13 @@ async def root():
         "message": "KeyPass API",
         "version": "1.0.0",
         "status": "active",
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/health")
 async def health_check():
     """Health check para Render"""
-    return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
+    return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
 
 @app.post("/api/auth/login")
 async def api_login(req: LoginReq):
