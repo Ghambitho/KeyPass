@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from jose import jwt
 from jose.exceptions import ExpiredSignatureError, JWTError
-from pydantic import BaseModel, EmailStr 
+from pydantic import BaseModel 
 
 # Importar lógica de KeyPass
 from api.Logic.login import verify_user, get_user_id, create_user, user_exists, get_user_profile
@@ -99,11 +99,11 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
 
 # ---- Modelos Pydantic (requests) ----
 class LoginReq(BaseModel):
-    email: EmailStr
+    email: str
     password: str
 
 class RegisterReq(BaseModel):
-    email: EmailStr
+    email: str
     username: str
     password: str
 
