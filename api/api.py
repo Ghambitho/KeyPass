@@ -20,6 +20,7 @@ from pydantic import BaseModel, EmailStr
 # Importar lógica de KeyPass
 from api.Logic.login import verify_user, get_user_id, create_user, user_exists, get_user_profile
 from api.Logic.storage import _load_all_passwords, save_password, delete_password
+from api.Logic.database_init import init_database
 from client.Logic.encryption import get_encryption_key
 from client.Logic.password_generator import generate_password
 import api.config as config
@@ -36,6 +37,17 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Evento de inicio para inicializar la base de datos
+@app.on_event("startup")
+async def startup_event():
+    """Inicializar base de datos al arrancar la aplicación"""
+    try:
+        init_database()
+        logger.info(" Base de datos inicializada correctamente")
+    except Exception as e:
+        logger.error(f" Error inicializando base de datos: {e}")
+        # No lanzar excepción para permitir que la app arranque
 
 # CORS para permitir conexiones desde tu .exe
 app.add_middleware(

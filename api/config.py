@@ -35,3 +35,8 @@ DEFAULT_ITERATIONS = int(os.getenv('DEFAULT_ITERATIONS', '200000'))
 SALT_BYTES = int(os.getenv('SALT_BYTES', '16'))
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "*").split(",")]
+
+# Configuración de contraseñas
+DEFAULT_PASSWORD_LENGTH = int(os.getenv('DEFAULT_PASSWORD_LENGTH', '16'))
+MIN_PASSWORD_LENGTH = int(os.getenv('MIN_PASSWORD_LENGTH', '8'))
+MAX_PASSWORD_LENGTH = int(os.getenv('MAX_PASSWORD_LENGTH', '128'))
