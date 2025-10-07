@@ -10,7 +10,7 @@ API_TIMEOUT = int(os.getenv("API_TIMEOUT", "10"))
 WINDOW_WIDTH = int(os.getenv('WINDOW_WIDTH', '900'))
 WINDOW_HEIGHT = int(os.getenv('WINDOW_HEIGHT', '600'))
 WINDOW_TITLE = os.getenv('WINDOW_TITLE', 'KeyPass - Gestor de Contraseñas')
-ASSETS_PATH = os.getenv('ASSETS_PATH', 'assets/')
+ASSETS_PATH = os.getenv('ASSETS_PATH', 'client/assets/')
 
 # Sesión local del cliente
 DEFAULT_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))

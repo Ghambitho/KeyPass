@@ -468,7 +468,7 @@ class View_Password(QWidget):
         # Botón ver/ocultar
         btn_eye = QToolButton(card)
         btn_eye.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_eye.setIcon(QIcon("assets/eye-closed.png"))  # inicia oculto
+        btn_eye.setIcon(QIcon("client/assets/eye-closed.png"))  # inicia oculto
         btn_eye.setIconSize(QSize(28, 28))
         btn_eye.setFixedSize(44, 40)
         btn_eye.setToolTip("Ver contraseña")
@@ -486,7 +486,7 @@ class View_Password(QWidget):
         def _toggle():
             if pwd.echoMode() == QLineEdit.EchoMode.Password:
                 pwd.setEchoMode(QLineEdit.EchoMode.Normal)
-                btn_eye.setIcon(QIcon("assets/eye-open.png"))
+                btn_eye.setIcon(QIcon("client/assets/eye-open.png"))
                 pwd.setStyleSheet("""
                     QLineEdit {
                         font-size: 20px;
@@ -501,7 +501,7 @@ class View_Password(QWidget):
                 btn_eye.setToolTip("Ocultar contraseña")
             else:
                 pwd.setEchoMode(QLineEdit.EchoMode.Password)
-                btn_eye.setIcon(QIcon("assets/eye-closed.png"))
+                btn_eye.setIcon(QIcon("client/assets/eye-closed.png"))
                 btn_eye.setToolTip("Ver contraseña")
                 pwd.setStyleSheet("""
                     QLineEdit {
@@ -521,7 +521,7 @@ class View_Password(QWidget):
         # Botón copiar
         btn_copy = QToolButton(card)
         btn_copy.setCursor(Qt.CursorShape.PointingHandCursor)
-        btn_copy.setIcon(QIcon("assets/copy-savepass.png"))
+        btn_copy.setIcon(QIcon("client/assets/copy-savepass.png"))
         btn_copy.setIconSize(QSize(22, 22))
         btn_copy.setFixedSize(44, 40)
         btn_copy.setToolTip("Copiar al portapapeles")
