@@ -4,7 +4,6 @@ KeyPass API - Servidor FastAPI para Render
 API intermedia para conectar el .exe con la base de datos PostgreSQL
 """
 from datetime import datetime, timedelta
-from http import client
 import os
 import logging
 from typing import Optional
@@ -145,12 +144,12 @@ async def api_login(req: LoginReq):
     try:
         email = req.email.strip()
         password = req.password.strip()
-        
+
         if not email or not password:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400,
                 detail="Email y contraseña requeridos"
-                )
+            )
         
         if verify_user(email, password):
             user_id = get_user_id(email)
@@ -169,23 +168,23 @@ async def api_login(req: LoginReq):
         raise
     except Exception as e:
         logger.error(f"Error en inicio de sesión: {e}")
-        raise JSONResponse(
+        return JSONResponse(
             status_code=500,
             content={"success": False, "message": "Error interno del servidor"}
         )
 
 @app.post("/api/auth/register")
-async def api_register(req: dict):
+async def api_register(req: RegisterReq):
     """Registrar nuevo usuario"""
     try:
         email = req.email.strip()
         username = req.username.strip()
         password = req.password.strip()
-        
+
         if not all([email, username, password]):
             raise HTTPException(
                 status_code=400,
-                detail="Todo s los campos son requeridos"
+                detail="Todos los campos son requeridos"
             )
         
         if user_exists(email=email, usuario=username):
@@ -230,17 +229,17 @@ async def api_get_passwords(user_id: int = Depends(verify_token)):
         )
 
 @app.post("/api/passwords")
-async def api_save_password(request: dict, user_id: int = Depends(verify_token)):
+async def api_save_password(request: SavePasswordReq, user_id: int = Depends(verify_token)):
     """Guardar nueva contraseña"""
     try:
         site = request.site.strip()
         username = request.username.strip()
         password = request.password.strip()
-        
+
         if not all([site, username, password]):
             raise HTTPException(
                 status_code=400,
-                detail="Todo los campos son requeridos"
+                detail="Todos los campos son requeridos"
             )
         
         success = save_password(site, username, password, user_id)
@@ -280,13 +279,13 @@ async def api_delete_password(password_id: int, user_id: int = Depends(verify_to
         )
 
 @app.post("/api/generate-password")
-async def api_generate_password(request: dict, user_id: int = Depends(verify_token)):
+async def api_generate_password(request: GeneratePasswordReq, user_id: int = Depends(verify_token)):
     """Generar contraseña aleatoria"""
     try:
-        length = request.get("length", config.DEFAULT_PASSWORD_LENGTH)
-        include_uppercase = request.get("include_uppercase", True)
-        include_numbers = request.get("include_numbers", True)
-        include_symbols = request.get("include_symbols", True)
+        length = request.length if request.length is not None else config.DEFAULT_PASSWORD_LENGTH
+        include_uppercase = request.include_uppercase
+        include_numbers = request.include_numbers
+        include_symbols = request.include_symbols
         
         # Validar longitud
         length = max(config.MIN_PASSWORD_LENGTH, min(config.MAX_PASSWORD_LENGTH, int(length)))
