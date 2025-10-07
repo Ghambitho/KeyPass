@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
-from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QColor
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import  QColor
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
-from Logic.login import verify_user, get_user_id
-from Logic.session import save_session
+import requests
+from client.config import API_BASE_URL, API_TIMEOUT
+from client.Logic.session import save_session
 
 class LoginView(QWidget):
     authenticated = pyqtSignal(int)
@@ -201,27 +202,39 @@ class LoginView(QWidget):
 
     def _do_login(self):
         self.msg.clear()
-        login = self.input_email.text().strip()
-        pw = self.input_pw.text()
-        
-        if not login or not pw:
+        email = self.input_email.text().strip()
+        password = self.input_pw.text()
+
+        if not email or not password:
             self.msg.setStyleSheet("color:#B91C1C;")
             self.msg.setText("Please enter your credentials.")
             return
-            
-        ok = verify_user(login, pw)
-        if ok:
-            # Obtener id y guardar sesión
-            uid = get_user_id(login)
-            if uid is not None:
+        try:
+            r = requests.post(
+                f"{API_BASE_URL}/api/auth/login",
+                json={"email": email, "password": password},
+                timeout=API_TIMEOUT
+            )
+            if r.ok and r.json().get("success"):
+                data = r.json()
+                uid = data["user_id"]
+                token = data["token"]
                 try:
-                    save_session(uid, ttl_days=30)
+                    save_session(uid, token, ttl_days=30)
                 except Exception:
                     pass
-
-            self.msg.setStyleSheet("color:#065F46;")
-            self.msg.setText("Signed in.")
-            self.authenticated.emit(uid if uid is not None else 0)
-        else:
+                self.msg.setStyleSheet("color:#065F46;")
+                self.msg.setText("Signed in.")
+                self.authenticated.emit(uid)
+            else:
+                msg = "Invalid credentials."
+                try:
+                    if r.headers.get("content-type", "").startswith("application/json"):
+                        msg = r.json().get("message", msg)
+                except Exception:
+                    pass
+                self.msg.setStyleSheet("color:#B91C1C;")
+                self.msg.setText(msg)
+        except Exception as e:
             self.msg.setStyleSheet("color:#B91C1C;")
-            self.msg.setText("Invalid credentials.")
+            self.msg.setText(f"API error: {e}")

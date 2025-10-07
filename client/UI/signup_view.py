@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-from PyQt6.QtCore import Qt, QSize, pyqtSignal
-from PyQt6.QtGui import QIcon, QColor
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import  QColor
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout,
     QCheckBox, QFrame, QGraphicsDropShadowEffect
 )
-from Logic.login import create_user, user_exists
-from Logic.session import save_session
-import config
+import requests
+from client import config
+from client.Logic.session import save_session
 
 class SignupView(QWidget):
     registered = pyqtSignal(int)
@@ -265,25 +265,33 @@ class SignupView(QWidget):
         if not self.terms.isChecked():
             self._error("Please agree to the Terms and Conditions.")
             return
-        
-        # Verificar si ya existe
-        if user_exists(email, name):
-            self._error("Email or username already exists.")
-            return
-        
+         
         # Crear usuario
-        try:
-            user_id = create_user(email, name, password)
-            if user_id:
-                # Guardar sesión automáticamente
+        try:     
+            r = requests.post(
+                f"{config.API_BASE_URL}/api/auth/register",
+                json={"email": email, "username": name, "password": password},
+                timeout=config.API_TIMEOUT
+            )
+            if r.ok and r.json().get("success"):
+                data = r.json()
+                user_id = data["user_id"]
+                token = data["token"]
+
                 try:
-                    save_session(user_id, ttl_days=config.DEFAULT_TTL_DAYS)
+                    save_session(user_id, token, ttl_days=config.DEFAULT_TTL_DAYS)
                 except Exception:
                     pass
-                
-                self._success("Account created successfully!")
+
+                self._success("Account created successfully.")
                 self.registered.emit(user_id)
             else:
-                self._error("Failed to create account. Please try again.")
+                msg = "Failed to register. Please try again."
+                try:
+                    if r.headers.get("content-type", "").startswith("application/json"):
+                        msg = r.json().get("message", msg)
+                except Exception:
+                    pass
+                self._error(msg)
         except Exception as e:
-            self._error(f"Error creating account: {str(e)}")
+            self._error(f"API error: {e}")

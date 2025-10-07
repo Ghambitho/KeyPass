@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-from Logic.encryption import get_encryption_key
+from api.routes.encryption import get_encryption_key
 import psycopg2
 from psycopg2.extras import RealDictCursor
-import config
+import api.config as config
 
 def _conn():
     """Conexión a PostgreSQL"""

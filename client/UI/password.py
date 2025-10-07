@@ -1,24 +1,16 @@
 # -*- coding: utf-8 -*-
-import sys
-from pathlib import Path
-
-# Ajustar sys.path para importar desde la raíz del proyecto
-BASE = Path(__file__).resolve().parent.parent
-if str(BASE) not in sys.path:
-    sys.path.insert(0, str(BASE))
-
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QLineEdit, QToolButton, QPushButton,
-    QVBoxLayout, QHBoxLayout, QScrollArea, QApplication, QFrame, QStackedWidget, QGraphicsDropShadowEffect,
+    QVBoxLayout, QHBoxLayout, QScrollArea, QFrame, QGraphicsDropShadowEffect,
     QMessageBox, QDialog, QFormLayout
 )
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QIcon, QColor
 
-# Importa del almacenamiento cifrado
-# Nota: _load_all_passwords es "interno", pero lo usamos para listar en el visor.
-from Logic.storage import _load_all_passwords, delete_password, save_password
 
+import requests
+from client.config import API_BASE_URL, API_TIMEOUT
+from client.Logic.session import load_session
 
 class View_Password(QWidget):
 
@@ -136,21 +128,22 @@ class View_Password(QWidget):
 
     # ================== Carga de datos ==================
     def _load_from_store(self):
-        """
-        Lee el archivo encriptado y trae todos los registros.
-        Estructura esperada: [{'sitio':..., 'usuario':..., 'contraseña':...}, ...]
-        """
-        try:
-            if self.user_id:
-                self._all_records = _load_all_passwords(self.user_id)
-            else:
-                self._all_records = []
-            if not isinstance(self._all_records, list):
-                self._all_records = []
-        except Exception:
-            # Si hay cualquier problema de lectura/descifrado
+        if self.user_id:
+            s = load_session()
             self._all_records = []
-
+            if s and "token" in s:
+                r = requests.get(
+                    f"{API_BASE_URL}/api/passwords",
+                    headers={"Authorization": f"Bearer {s['token']}"},
+                    timeout=API_TIMEOUT
+                )
+                if r.ok and r.json().get("success"):
+                    self._all_records = r.json().get("passwords", [])
+        else:
+            self._all_records = []
+        if not isinstance(self._all_records, list):
+            self._all_records = []
+            
     # ================== Filtrado y render ==================
     def _apply_filter(self, text: str):
         self._rebuild_list(text)
@@ -184,7 +177,7 @@ class View_Password(QWidget):
     def _matches_filter(self, rec: dict, query: str) -> bool:
         if not query:
             return True
-        hay = f"{rec.get('sitio','')} {rec.get('usuario','')}".lower()
+        hay = f"{rec.get('site','')} {rec.get('username','')}".lower()
         return query in hay
 
     def _insert_item_widget(self, rec: dict) -> QWidget:
@@ -200,9 +193,9 @@ class View_Password(QWidget):
         Card con:
           [ Sitio + Usuario ] [ ************ ] [👁] [📋]
         """
-        sitio = rec.get("sitio", "")
-        usuario = rec.get("usuario", "")
-        password = rec.get("contraseña", "")
+        sitio = rec.get("site", "")
+        usuario = rec.get("username", "")
+        password = rec.get("password", "")
 
         card = QFrame(self)
         card.setFrameShape(QFrame.Shape.NoFrame)
@@ -270,14 +263,33 @@ class View_Password(QWidget):
             dlg = EditPasswordDialog(self, sitio, usuario, password)
             dlg.setWindowTitle("Edit Password")
             dlg.setStyleSheet("background: #FEFEFE; Color: black;")
+
             if dlg.exec() == QDialog.DialogCode.Accepted:
                 new_sitio, new_usuario, new_clave = dlg.get_data()
+
                 if new_sitio and new_usuario and new_clave:
                     try:
-                        # Eliminar el registro antiguo
-                        delete_password(rec_id, self.user_id)
-                        # Crear el nuevo registro
-                        save_password(new_sitio, new_usuario, new_clave, self.user_id)
+                        s = load_session()
+                        if not s or "token" not in s:
+                            raise RuntimeError("No valid session found.")
+                        
+                        dr = requests.delete(
+                            f"{API_BASE_URL}/api/passwords/{rec_id}",
+                            headers={"Authorization": f"Bearer {s['token']}"},
+                            timeout=API_TIMEOUT
+                        )
+                        if not dr.ok:
+                            raise RuntimeError("No se pudo eliminar el registro antiguo")
+                        
+                        cr = requests.post(
+                            f"{API_BASE_URL}/api/passwords",
+                            headers={"Authorization": f"Bearer {s['token']}"},
+                            json={"site": new_sitio, "username": new_usuario, "password": new_clave},
+                            timeout=API_TIMEOUT
+                        )
+                        if not (cr.ok and cr.json().get("success")):
+                            raise RuntimeError(cr.json().get("message", "Error al guardar")
+                                               )
                         # Mostrar mensaje de éxito
                         success_msg = QMessageBox(self)
                         success_msg.setWindowTitle("Éxito")
@@ -385,8 +397,15 @@ class View_Password(QWidget):
             resp = msg.exec()
             if resp == QMessageBox.StandardButton.Yes:
                 try:
-                    ok = delete_password(rec_id, self.user_id)
-                    if ok:
+                    s = load_session()
+                    if not s or "token" not in s:
+                        raise RuntimeError("No valid session found.")
+                    r = requests.delete(
+                        f"{API_BASE_URL}/api/passwords/{rec_id}",
+                        headers={"Authorization": f"Bearer {s['token']}"},
+                        timeout=API_TIMEOUT
+                    )
+                    if r.ok and r.json().get("success"):
                         # Mostrar mensaje de éxito
                         success_msg = QMessageBox(self)
                         success_msg.setWindowTitle("Éxito")
@@ -399,7 +418,7 @@ class View_Password(QWidget):
                     else:
                         error_msg = QMessageBox(self)
                         error_msg.setWindowTitle("Error")
-                        error_msg.setText("No se pudo eliminar el registro.")
+                        error_msg.setText(r.json().get("message", "No se pudo eliminar el registro."))
                         error_msg.setIcon(QMessageBox.Icon.Warning)
                         error_msg.setStandardButtons(QMessageBox.StandardButton.Ok)
                         error_msg.exec()
@@ -543,10 +562,21 @@ class View_Password(QWidget):
             sitio, usuario, clave = dlg.get_data()
             if sitio and usuario and clave:
                 try:
-                    save_password(sitio, usuario, clave, self.user_id)
-                    self.refresh()
-                except Exception:
-                    QMessageBox.warning(self, "Error", "No se pudo guardar la contraseña")
+                    s = load_session()
+                    if not s or "token" not in s:
+                        raise RuntimeError("No valid session found.")
+                    r = requests.post(
+                        f"{API_BASE_URL}/api/passwords",
+                        headers={"Authorization": f"Bearer {s['token']}"},
+                        json={"site": sitio, "username": usuario, "password": clave},
+                        timeout=API_TIMEOUT
+                    )
+                    if r.ok and r.json().get("success"):
+                        self.refresh()
+                    else:
+                        QMessageBox.warning(self, "Error", r.json().get("message", "No se pudo guardar la contraseña."))
+                except Exception as e:
+                    QMessageBox.warning(self, "Error", f"No se pudo guardar la contraseña: {e}")
 
 
 class AddPasswordDialog(QDialog):

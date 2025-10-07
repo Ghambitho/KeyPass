@@ -3,23 +3,26 @@
 KeyPass API - Servidor FastAPI para Render
 API intermedia para conectar el .exe con la base de datos PostgreSQL
 """
+from datetime import datetime, timedelta
+from http import client
+import os
+import logging
+from typing import Optional
 
 from fastapi import FastAPI, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from jose import jwt
-from datetime import datetime, timedelta
-import os
-import logging
-from typing import Optional
+from jose.exceptions import ExpiredSignatureError, JWTError
+from pydantic import BaseModel, EmailStr 
 
 # Importar lógica de KeyPass
-from Logic.login import verify_user, get_user_id, create_user, user_exists
-from Logic.storage import _load_all_passwords, save_password, delete_password
-from Logic.encryption import get_encryption_key
-from Logic.password_generator import generate_password
-import config
+from api.Logic.login import verify_user, get_user_id, create_user, user_exists, get_user_profile
+from api.Logic.storage import _load_all_passwords, save_password, delete_password
+from client.Logic.encryption import get_encryption_key
+from client.Logic.password_generator import generate_password
+import api.config as config
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -37,16 +40,16 @@ app = FastAPI(
 # CORS para permitir conexiones desde tu .exe
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especificar IPs específicas
+    allow_origins=config.ALLOWED_ORIGINS,  # En producción, especificar IPs específicas
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"],
 )
 
 # Configuración JWT
-SECRET_KEY = os.getenv("JWT_SECRET", "your-super-secret-jwt-key-change-this")
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24
+SECRET_KEY = config.JWT_SECRET
+ALGORITHM = config.JWT_ALG
+ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("JWT_EXP_HOURS", "12"))
 
 security = HTTPBearer()
 
@@ -71,16 +74,39 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
                 detail="Token inválido"
             )
         return user_id
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token expirado"
         )
-    except jwt.JWTError:
+    except JWTError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido"
         )
+    
+
+# ---- Modelos Pydantic (requests) ----
+class LoginReq(BaseModel):
+    email: EmailStr
+    password: str
+
+class RegisterReq(BaseModel):
+    email: EmailStr
+    username: str
+    password: str
+
+class SavePasswordReq(BaseModel):
+    site: str
+    username: str
+    password: str
+
+class GeneratePasswordReq(BaseModel):
+    length: Optional[int] = None
+    include_uppercase: bool = True
+    include_numbers: bool = True
+    include_symbols: bool = True
+
 
 # Middleware para logging de requests
 @app.middleware("http")
@@ -114,17 +140,17 @@ async def health_check():
     return {"status": "healthy", "timestamp": datetime.utcnow().isoformat()}
 
 @app.post("/api/auth/login")
-async def api_login(request: dict):
+async def api_login(req: LoginReq):
     """Autenticar usuario"""
     try:
-        email = request.get("email", "").strip()
-        password = request.get("password", "").strip()
+        email = req.email.strip()
+        password = req.password.strip()
         
         if not email or not password:
-            return JSONResponse(
+            return HTTPException(
                 status_code=400,
-                content={"success": False, "message": "Email y contraseña requeridos"}
-            )
+                detail="Email y contraseña requeridos"
+                )
         
         if verify_user(email, password):
             user_id = get_user_id(email)
@@ -135,30 +161,31 @@ async def api_login(request: dict):
                 "user_id": user_id,
                 "expires_in": ACCESS_TOKEN_EXPIRE_HOURS * 3600
             }
-        else:
-            return JSONResponse(
-                status_code=401,
-                content={"success": False, "message": "Credenciales inválidas"}
-            )
+        raise HTTPException(
+            status_code=401,
+            detail="Credenciales inválidas"
+        )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error en login: {e}")
-        return JSONResponse(
+        logger.error(f"Error en inicio de sesión: {e}")
+        raise JSONResponse(
             status_code=500,
             content={"success": False, "message": "Error interno del servidor"}
         )
 
 @app.post("/api/auth/register")
-async def api_register(request: dict):
+async def api_register(req: dict):
     """Registrar nuevo usuario"""
     try:
-        email = request.get("email", "").strip()
-        username = request.get("username", "").strip()
-        password = request.get("password", "").strip()
+        email = req.email.strip()
+        username = req.username.strip()
+        password = req.password.strip()
         
         if not all([email, username, password]):
-            return JSONResponse(
+            raise HTTPException(
                 status_code=400,
-                content={"success": False, "message": "Todos los campos son requeridos"}
+                detail="Todo s los campos son requeridos"
             )
         
         if user_exists(email=email, usuario=username):
@@ -176,6 +203,8 @@ async def api_register(request: dict):
             "user_id": user_id,
             "message": "Usuario creado exitosamente"
         }
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error en registro: {e}")
         return JSONResponse(
@@ -204,14 +233,14 @@ async def api_get_passwords(user_id: int = Depends(verify_token)):
 async def api_save_password(request: dict, user_id: int = Depends(verify_token)):
     """Guardar nueva contraseña"""
     try:
-        site = request.get("site", "").strip()
-        username = request.get("username", "").strip()
-        password = request.get("password", "").strip()
+        site = request.site.strip()
+        username = request.username.strip()
+        password = request.password.strip()
         
         if not all([site, username, password]):
-            return JSONResponse(
+            raise HTTPException(
                 status_code=400,
-                content={"success": False, "message": "Todos los campos son requeridos"}
+                detail="Todo los campos son requeridos"
             )
         
         success = save_password(site, username, password, user_id)
@@ -222,6 +251,8 @@ async def api_save_password(request: dict, user_id: int = Depends(verify_token))
                 status_code=500,
                 content={"success": False, "message": "Error al guardar contraseña"}
             )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error guardando contraseña: {e}")
         return JSONResponse(
@@ -280,7 +311,6 @@ async def api_generate_password(request: dict, user_id: int = Depends(verify_tok
 async def api_get_profile(user_id: int = Depends(verify_token)):
     """Obtener perfil del usuario"""
     try:
-        from Logic.login import get_user_profile
         profile = get_user_profile(user_id)
         if profile:
             return {

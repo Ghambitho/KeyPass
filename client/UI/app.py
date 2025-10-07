@@ -1,13 +1,5 @@
 # -*- coding: utf-8 -*-
-
 import sys
-from pathlib import Path
-
-# Ajustar sys.path para importar desde la raíz
-BASE = Path(__file__).resolve().parent.parent
-if str(BASE) not in sys.path:
-    sys.path.insert(0, str(BASE))
-
 from PyQt6.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QToolButton, QHBoxLayout,
     QCheckBox, QSlider, QGraphicsDropShadowEffect, QMenu, QStackedWidget, QVBoxLayout, QFrame
@@ -15,19 +7,15 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt, QPoint, QSize, pyqtSignal
 from PyQt6.QtGui import QColor, QIcon
 
-from Logic.password_generator import generate_password
-from Logic.storage import save_password
-import config
-
-# Usando versiones simples de los módulos
-from Main.PerfilWindow import Perfil_Window
-from Main.login_view import LoginView
-from Main.password import View_Password
-from Main.signup_view import SignupView   # <-- vista de registro
-from Logic.session import has_session, load_session, clear_session
-from Logic.login import get_user_profile
-from Logic.database_init import init_database
-import config
+from client.Logic.password_generator import generate_password
+from api.Logic.storage import save_password
+from client.UI.PerfilWindow import Perfil_Window
+from client.UI.login_view import LoginView
+from client.UI.password import View_Password
+from client.UI.signup_view import SignupView   # <-- vista de registro
+from client.Logic.session import has_session, load_session, clear_session
+from api.Logic.login import get_user_profile
+import client.config as config
 
 
 class Ventana(QWidget):
@@ -46,9 +34,6 @@ class Ventana(QWidget):
       
 
         self.current_user_id = None
-        
-        # Inicializar base de datos
-        init_database()
 
         # --- Layout principal + Stack ---
         self.layout = QVBoxLayout(self)

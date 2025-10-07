@@ -1,16 +1,14 @@
 # -*- coding: utf-8 -*-
 from pathlib import Path
-import json, time
-from Logic.encryption import AESEncryption
+import json, time, os, base64, tempfile
 import keyring
 import getpass
-import config
-import os
-import base64
 
-BASE = Path(__file__).resolve().parent.parent
+from client.Logic.encryption import AESEncryption
+from client import config
+
+
 # Para Render: usar directorio temporal en lugar de carpeta db local
-import tempfile
 SESSION_FILE = Path(tempfile.gettempdir()) / config.SESSION_FILE
 
 def _get_or_create_key() -> bytes:
@@ -26,7 +24,6 @@ def _get_or_create_key() -> bytes:
         else:
             key = os.urandom(32)
             keyring.set_password(service_name, username, base64.b64encode(key).decode('utf-8'))
-            print("AES session key created and saved to system keyring")
             
     except Exception as e:
         raise Exception(f"Failed to access system keyring for sessions: {e}. Please ensure keyring is properly configured.")
@@ -36,13 +33,12 @@ def _get_or_create_key() -> bytes:
 def _aes_encryption() -> AESEncryption:
     return AESEncryption(_get_or_create_key())
 
-def save_session(user_id: int, ttl_days: int = None) -> None:
-    """Guarda la sesión del usuario por un tiempo (TTL) dado en días."""
+def save_session(user_id: int, token: str, ttl_days: int | None = None) -> None:
     if ttl_days is None:
         ttl_days = config.DEFAULT_TTL_DAYS
-    payload = {"user": user_id, "ts": int(time.time()), "ttl": ttl_days * 86400}
-    token = _aes_encryption().encrypt(json.dumps(payload).encode("utf-8"))
-    SESSION_FILE.write_bytes(token)
+    payload = {"user": user_id, 'token': token, "ts": int(time.time()), "ttl": ttl_days * 86400}
+    token_bytes = _aes_encryption().encrypt(json.dumps(payload).encode("utf-8"))
+    SESSION_FILE.write_bytes(token_bytes)
 
 def load_session() -> dict | None:
     """Devuelve el payload si existe y no ha expirado; si no, None."""

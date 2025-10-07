@@ -1,20 +1,14 @@
 # -*- coding: utf-8 -*-
 import sys
-from pathlib import Path
-import sqlite3
-# Ajustar sys.path para importar desde la raíz del proyecto
-BASE = Path(__file__).resolve().parent.parent
-if str(BASE) not in sys.path:
-    sys.path.insert(0, str(BASE))
 
 from PyQt6.QtWidgets import (
     QWidget, QLabel, QPushButton, QFrame, QApplication, QGraphicsDropShadowEffect
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QColor
-from Logic.session import load_session, clear_session
-from Logic.login import get_user_profile
-from Logic.storage import _load_all_passwords
+from client.Logic.session import load_session, clear_session
+from api.Logic.login import get_user_profile
+from api.Logic.storage import _load_all_passwords
 import csv
 from datetime import datetime
 
@@ -209,7 +203,7 @@ class Perfil_Window(QWidget):
 
         # Mensajes
         self.msg_label = QLabel("", self)
-        self.msg_label.setGeometry(50, 620, 800, 30)
+        self.msg_label.setGeometry(50, 520, 800, 30)
         self.msg_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.msg_label.setStyleSheet("font-size: 14px; color: #6B7280;")
 

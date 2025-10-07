@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import random
 import string
-import config
+from client import config
 
 def generate_password(longitud=None, incluir_mayusculas=True, incluir_numeros=True, incluir_simbolos=True):
     """
