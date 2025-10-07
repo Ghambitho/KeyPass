@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from api.routes.encryption import get_encryption_key
+from client.Logic.encryption import get_encryption_key
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import api.config as config
