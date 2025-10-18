@@ -1,26 +1,24 @@
 # -*- coding: utf-8 -*-
 import os
 import hmac
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import sqlite3
 import hashlib
 from typing import Optional, Tuple
+from pathlib import Path
 import config
 
 ALGO = config.ENCRYPTION_ALGORITHM
 DEFAULT_ITER = config.DEFAULT_ITERATIONS
 SALT_BYTES = config.SALT_BYTES
 
+# Directorio de datos local
+DATA_DIR = Path(__file__).resolve().parent.parent / "db"
+DATA_DIR.mkdir(exist_ok=True)
+DB_FILE = DATA_DIR / "keypass.db"
+
 def _conn():
-    """Conexión a PostgreSQL"""
-    return psycopg2.connect(
-        host=config.DB_HOST,
-        database=config.DB_NAME,
-        user=config.DB_USER,
-        password=config.DB_PASSWORD,
-        port=config.DB_PORT,
-        sslmode='require'
-    )
+    """Conexión a SQLite"""
+    return sqlite3.connect(DB_FILE)
 def _pbkdf2(password: str, salt: bytes, iterations: int = DEFAULT_ITER) -> bytes:
     return hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
 
@@ -44,15 +42,14 @@ def _sha256_hex(password: str) -> str:
     return hashlib.sha256(password.encode("utf-8")).hexdigest()
 
 def user_exists(email: str = "", usuario: str = "") -> bool:
-    email = (email or "").strip()
-    usuario = (usuario or "").strip()
+    """Verifica si un usuario existe en SQLite"""
+    email = (email or "").strip().lower()
+    usuario = (usuario or "").strip().lower()
+    
     conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT 1 FROM login WHERE email=%s OR usuario=%s LIMIT 1",
-            (email, usuario),
-        )
+        cur.execute("SELECT 1 FROM login WHERE email=? OR usuario=? LIMIT 1", (email, usuario))
         found = cur.fetchone() is not None
         return found
     finally:
@@ -60,6 +57,7 @@ def user_exists(email: str = "", usuario: str = "") -> bool:
 
 
 def create_user(email: str, usuario: str, password: str) -> int:
+    """Crea un nuevo usuario en SQLite"""
     email = email.strip().lower()
     usuario = usuario.strip().lower()
 
@@ -70,33 +68,30 @@ def create_user(email: str, usuario: str, password: str) -> int:
     conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute(
-            "INSERT INTO login(email, usuario, pass) VALUES(%s,%s,%s) RETURNING id",
-            (email, usuario, record),
-        )
-        new_id = cur.fetchone()[0]
+        cur.execute("INSERT INTO login(email, usuario, pass) VALUES(?,?,?)", (email, usuario, record))
+        new_id = cur.lastrowid
         conn.commit()
         return new_id
+    except Exception:
+        return 0
     finally:
         conn.close()
 
 
 def verify_user(login: str, password: str) -> bool:
-    """Verifica credenciales. Acepta email o usuario en 'login'."""
-    login = login.strip()
+    """Verifica credenciales desde SQLite. Acepta email o usuario en 'login'."""
+    login = login.strip().lower()
     conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT id, pass FROM login WHERE email=%s OR usuario=%s LIMIT 1",
-            (login, login),
-        )
+        cur.execute("SELECT id, pass FROM login WHERE email=? OR usuario=? LIMIT 1", (login, login))
         row = cur.fetchone()
         if not row:
             return False
 
         user_id, stored = row
 
+        # Verificar con PBKDF2
         parsed = _decode_record(stored)
         if parsed is not None:
             iterations, salt, good_dk = parsed
@@ -104,12 +99,14 @@ def verify_user(login: str, password: str) -> bool:
             ok = hmac.compare_digest(candidate, good_dk)
             return ok
 
+        # Verificar con SHA256 (migración)
         if len(stored) == 64 and all(c in "0123456789abcdef" for c in stored.lower()):
             ok = hmac.compare_digest(_sha256_hex(password), stored)
             if ok:
                 _migrate_to_pbkdf2(user_id, password, conn)
             return ok
 
+        # Verificar texto plano (migración)
         ok = hmac.compare_digest(password, stored)
         if ok:
             _migrate_to_pbkdf2(user_id, password, conn)
@@ -118,23 +115,21 @@ def verify_user(login: str, password: str) -> bool:
         conn.close()
 
 
-def _migrate_to_pbkdf2(user_id: int, password: str, conn: psycopg2.extensions.connection) -> None:
-    """Actualiza la fila a formato PBKDF2 en la conexión abierta."""
+def _migrate_to_pbkdf2(user_id: int, password: str, conn: sqlite3.Connection) -> None:
+    """Actualiza el usuario a formato PBKDF2 en SQLite."""
     salt = os.urandom(SALT_BYTES)
     dk = _pbkdf2(password, salt, DEFAULT_ITER)
     record = _encode_record(DEFAULT_ITER, salt, dk)
     cur = conn.cursor()
-    cur.execute("UPDATE login SET pass=%s WHERE id=%s", (record, user_id))
+    cur.execute("UPDATE login SET pass=? WHERE id=?", (record, user_id))
     conn.commit()
 
 def get_user_profile(user_id: int) -> tuple | None:
+    """Obtiene el perfil del usuario desde SQLite"""
     conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute(
-            "SELECT email, usuario FROM login WHERE id=%s",
-            (user_id,)
-        )
+        cur.execute("SELECT email, usuario FROM login WHERE id=?", (user_id,))
         row = cur.fetchone()
         return row
     finally:
@@ -142,10 +137,10 @@ def get_user_profile(user_id: int) -> tuple | None:
 
 
 def update_user_profile(user_id: int, new_email: str, new_usuario: str) -> bool:
-    """Actualiza el perfil del usuario"""
+    """Actualiza el perfil del usuario en SQLite"""
     try:
-        new_email = new_email.strip()
-        new_usuario = new_usuario.strip()
+        new_email = new_email.strip().lower()
+        new_usuario = new_usuario.strip().lower()
         
         if not new_email or not new_usuario:
             return False
@@ -155,20 +150,14 @@ def update_user_profile(user_id: int, new_email: str, new_usuario: str) -> bool:
             cur = conn.cursor()
             
             # Verificar que no esté en uso por otro usuario
-            cur.execute(
-                "SELECT id FROM login WHERE (email=%s OR usuario=%s) AND id!=%s",
-                (new_email, new_usuario, user_id)
-            )
+            cur.execute("SELECT id FROM login WHERE (email=? OR usuario=?) AND id!=?", (new_email, new_usuario, user_id))
             if cur.fetchone():
                 return False
             
-            # Actualizar
-            cur.execute(
-                "UPDATE login SET email=%s, usuario=%s WHERE id=%s",
-                (new_email, new_usuario, user_id)
-            )
+            # Actualizar perfil
+            cur.execute("UPDATE login SET email=?, usuario=? WHERE id=?", (new_email, new_usuario, user_id))
             conn.commit()
-            return True
+            return cur.rowcount > 0
         finally:
             conn.close()
     except Exception:
@@ -176,15 +165,16 @@ def update_user_profile(user_id: int, new_email: str, new_usuario: str) -> bool:
     
 def get_user_id(login: str) -> int | None:
     """
-    Devuelve el id del usuario para email o usuario dado; None si no existe.
+    Devuelve el id del usuario para email o usuario dado desde SQLite; None si no existe.
     """
     login = (login or "").strip().lower()
     if not login:
         return None
+    
     conn = _conn()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM login WHERE email=%s OR usuario=%s LIMIT 1", (login, login))
+        cur.execute("SELECT id FROM login WHERE email=? OR usuario=? LIMIT 1", (login, login))
         row = cur.fetchone()
         return row[0] if row else None
     finally:

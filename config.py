@@ -10,12 +10,9 @@ load_dotenv()
 ENV = os.getenv('ENV', 'development')
 DEBUG = os.getenv('DEBUG', 'false').lower() == 'true'
 
-# Base de datos PostgreSQL
-DB_HOST = os.getenv('DB_HOST')
-DB_NAME = os.getenv('DB_NAME', 'postgres')
-DB_USER = os.getenv('DB_USER')
-DB_PASSWORD = os.getenv('DB_PASSWORD')
-DB_PORT = int(os.getenv('DB_PORT', '5432'))
+# Base de datos SQLite local
+DB_PATH = os.getenv('DB_PATH', 'db')
+DB_FILE = os.getenv('DB_FILE', 'keypass.db')
 
 # JWT
 JWT_SECRET = os.getenv('JWT_SECRET')
@@ -42,4 +39,3 @@ DEFAULT_PASSWORD_LENGTH = int(os.getenv('DEFAULT_PASSWORD_LENGTH', '14'))
 
 # Archivos
 ASSETS_PATH = os.getenv('ASSETS_PATH', 'Main/assets/')
-DB_PATH = os.getenv('DB_PATH', 'db')
