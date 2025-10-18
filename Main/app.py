@@ -303,7 +303,7 @@ class PasswordGenerator(QWidget):
 
         # Botón de copiar
         self.btn_copy = QPushButton(self)
-        self.btn_copy.setIcon(QIcon("assets/copy-pass.png"))
+        self.btn_copy.setIcon(QIcon("Main/assets/copy-pass.png"))
         self.btn_copy.setGeometry(530, 89, 200, 62)
         self.btn_copy.setIconSize(QSize(80, 49))
         self.btn_copy.clicked.connect(self.copiar_al_portapapeles)

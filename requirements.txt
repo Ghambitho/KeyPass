@@ -1,7 +1,26 @@
-# KeyPass - Gestor de Contraseñas Seguro
-# Dependencias principales
+# KeyPass API - Dependencias para Render
+# ======================================
 
-PyQt6>=6.4.0
+# Framework web
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Base de datos PostgreSQL
+psycopg2-binary>=2.9.0
+
+# Autenticación JWT
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+
+# Criptografía y seguridad
 cryptography>=3.4.8
 keyring>=23.0.0
+
+# Variables de entorno
 python-dotenv>=0.19.0
+
+# Cliente HTTP para el .exe
+requests>=2.31.0
+
+# Utilidades
+pydantic>=2.0.0
